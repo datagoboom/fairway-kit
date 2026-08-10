@@ -4,16 +4,24 @@
  * in Express (Express req/res are node req/res). */
 
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { createReadStream } from "node:fs";
+import { mkdir, stat, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { extname, join, resolve } from "node:path";
 import { PROTOCOL_VERSION } from "@fairway-kit/protocol";
 import type { JobRegistry } from "./jobs.js";
 import type { Runner, TurnContext } from "./types.js";
 import type { Store } from "./store.js";
+
+const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
 
 export interface RouterDeps {
   store: Store;
   registry: JobRegistry;
   runner: Runner;
   prefix?: string;
+  /** Directory for uploaded files. Omit to disable attachments (uploads 400). */
+  attachmentsDir?: string;
 }
 
 type Req = IncomingMessage;
@@ -22,6 +30,7 @@ type Res = ServerResponse;
 export function createHandler(deps: RouterDeps): (req: Req, res: Res) => Promise<boolean> {
   const { store, registry, runner } = deps;
   const prefix = deps.prefix ?? "/api/chat";
+  const attachmentsDir = deps.attachmentsDir ? resolve(deps.attachmentsDir) : null;
 
   return async function handle(req, res): Promise<boolean> {
     const url = new URL(req.url ?? "/", "http://x");
@@ -55,6 +64,12 @@ export function createHandler(deps: RouterDeps): (req: Req, res: Res) => Promise
         const job = await store.activeJobForSession(m[1]);
         return json(res, 200, job ? { job_id: job.id, status: job.status } : { job_id: null });
       }
+      if ((m = path.match(/^\/sessions\/([^/]+)\/attachments$/)) && method === "POST") {
+        return await handleUpload(m[1]);
+      }
+      if ((m = path.match(/^\/attachments\/([^/]+)$/)) && method === "GET") {
+        return await handleServeAttachment(m[1]);
+      }
       if ((m = path.match(/^\/sessions\/([^/]+)\/send$/)) && method === "POST") {
         return await handleSend(m[1]);
       }
@@ -80,6 +95,7 @@ export function createHandler(deps: RouterDeps): (req: Req, res: Res) => Promise
       }
       return json(res, 404, err("not found"));
     } catch (e) {
+      if (res.writableEnded) return true;
       return json(res, 500, err(String((e as Error)?.message ?? e)));
     }
 
@@ -91,8 +107,37 @@ export function createHandler(deps: RouterDeps): (req: Req, res: Res) => Promise
 
       const body = await readJson(req);
       const content = typeof body.content === "string" ? body.content : "";
+
+      // Resolve attachment references (uploaded earlier) into full records;
+      // runners get absolute paths, persisted messages keep the public shape.
+      const refs = Array.isArray(body.attachments) ? (body.attachments as Record<string, unknown>[]) : [];
+      const resolved: Record<string, unknown>[] = [];
+      for (const ref of refs) {
+        const att = await store.getAttachment(String(ref?.id ?? ""));
+        if (!att || att.session_id !== sessionId)
+          return json(res, 400, err(`unknown attachment: ${ref?.id}`));
+        resolved.push(att);
+      }
+      const publicRefs = resolved.map((a) => ({
+        id: a.id,
+        name: a.name,
+        media_type: a.media_type,
+        size: a.size,
+      }));
+      const runnerAttachments =
+        attachmentsDir === null
+          ? []
+          : resolved.map((a, i) => ({
+              ...publicRefs[i],
+              path: join(attachmentsDir, a.path as string),
+            }));
+
+      // PROTOCOL.md 7 send ordering: history snapshot, user row, streaming
+      // assistant row, job row — all durable before we respond or start the runner.
       const history = await store.listMessages(sessionId);
-      const userMessageId = await store.addMessage(sessionId, "user", content);
+      const userMessageId = await store.addMessage(sessionId, "user", content, {
+        attachments: publicRefs.length ? publicRefs : null,
+      });
       const assistantMessageId = await store.addMessage(sessionId, "assistant", "", { streaming: true });
       const jobId = await store.createJob(sessionId);
 
@@ -103,7 +148,7 @@ export function createHandler(deps: RouterDeps): (req: Req, res: Res) => Promise
         userMessageId,
         assistantMessageId,
         jobId,
-        attachments: [],
+        attachments: runnerAttachments,
         signal: new AbortController().signal, // replaced by registry.start
         providerSessionId: (session.provider_session_id as string) ?? null,
       };
@@ -113,6 +158,64 @@ export function createHandler(deps: RouterDeps): (req: Req, res: Res) => Promise
         user_message_id: userMessageId,
         assistant_message_id: assistantMessageId,
       });
+    }
+
+    async function handleUpload(sessionId: string): Promise<boolean> {
+      if (attachmentsDir === null) return json(res, 400, err("attachments are not enabled on this server"));
+      if (!(await store.getSession(sessionId))) return json(res, 404, err("session not found"));
+      let file: { data: Buffer; filename: string; mimeType: string };
+      try {
+        file = await readMultipartFile(req, MAX_ATTACHMENT_BYTES);
+      } catch (e) {
+        const msg = String((e as Error)?.message ?? e);
+        return json(res, msg === "attachment too large" ? 413 : 400, err(msg));
+      }
+      const name = (file.filename || "file").replace(/[^\w.\- ]/g, "_").slice(0, 120) || "file";
+      const suffix = extname(name).slice(0, 16);
+      const blobName = `${randomUUID().replace(/-/g, "")}${suffix}`;
+      await mkdir(attachmentsDir, { recursive: true });
+      await writeFile(join(attachmentsDir, blobName), file.data);
+      const rec = await store.addAttachment(
+        sessionId,
+        name,
+        file.mimeType || "application/octet-stream",
+        file.data.length,
+        blobName,
+      );
+      return json(res, 201, rec);
+    }
+
+    async function handleServeAttachment(attachmentId: string): Promise<boolean> {
+      const att = await store.getAttachment(attachmentId);
+      if (!att || attachmentsDir === null) return json(res, 404, err("attachment not found"));
+      // att.path is a uuid blob name we generated; still resolve-and-confine so a
+      // tampered row can't escape the attachments directory.
+      const full = resolve(join(attachmentsDir, att.path as string));
+      if (full !== attachmentsDir && !full.startsWith(attachmentsDir + "/"))
+        return json(res, 404, err("attachment not found"));
+      let size: number;
+      try {
+        const st = await stat(full);
+        if (!st.isFile()) return json(res, 404, err("attachment file missing"));
+        size = st.size;
+      } catch {
+        return json(res, 404, err("attachment file missing"));
+      }
+      // Content-Disposition: attachment forces download (uploaded HTML/SVG can't
+      // render inline); nosniff stops the browser second-guessing the media type.
+      res.writeHead(200, {
+        "Content-Type": (att.media_type as string) || "application/octet-stream",
+        "Content-Length": size,
+        "Content-Disposition": `attachment; filename="${encodeURIComponent(att.name as string)}"`,
+        "X-Content-Type-Options": "nosniff",
+      });
+      await new Promise<void>((done, fail) => {
+        const rs = createReadStream(full);
+        rs.on("error", fail);
+        rs.on("end", () => done());
+        rs.pipe(res);
+      });
+      return true;
     }
 
     async function handleStream(jobId: string, since: number): Promise<boolean> {
@@ -158,5 +261,50 @@ function readJson(req: Req): Promise<Record<string, unknown>> {
       }
     });
     req.on("error", reject);
+  });
+}
+
+/** Read the first file field of a multipart/form-data body (the client uploads a
+ * single `file` field). Rejects with "attachment too large" past `maxBytes`. */
+function readMultipartFile(
+  req: Req,
+  maxBytes: number,
+): Promise<{ data: Buffer; filename: string; mimeType: string }> {
+  return new Promise((resolveP, reject) => {
+    const ct = req.headers["content-type"] ?? "";
+    if (!ct.includes("multipart/form-data")) return reject(new Error("expected multipart/form-data"));
+    // Import lazily so the dependency only loads on the upload path.
+    void import("busboy")
+      .then(({ default: Busboy }) => {
+        const bb = Busboy({ headers: req.headers, limits: { files: 1, fileSize: maxBytes } });
+        let settled = false;
+        const fail = (e: Error) => {
+          if (settled) return;
+          settled = true;
+          req.unpipe(bb);
+          reject(e);
+        };
+        let got = false;
+        bb.on("file", (_name, stream, info) => {
+          got = true;
+          const chunks: Buffer[] = [];
+          stream.on("data", (d: Buffer) => chunks.push(d));
+          stream.on("limit", () => fail(new Error("attachment too large")));
+          stream.on("end", () => {
+            if (settled) return;
+            settled = true;
+            resolveP({ data: Buffer.concat(chunks), filename: info.filename, mimeType: info.mimeType });
+          });
+        });
+        bb.on("close", () => {
+          if (!got && !settled) {
+            settled = true;
+            reject(new Error("no file field in upload"));
+          }
+        });
+        bb.on("error", (e: unknown) => fail(e as Error));
+        req.pipe(bb);
+      })
+      .catch(() => reject(new Error('attachments need the "busboy" package: npm install busboy')));
   });
 }

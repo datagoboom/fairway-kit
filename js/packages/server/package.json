@@ -10,7 +10,15 @@
     "directory": "js/packages/server"
   },
   "homepage": "https://github.com/datagoboom/fairway-kit",
-  "keywords": ["agent", "chat", "sse", "streaming", "node", "server", "local-first"],
+  "keywords": [
+    "agent",
+    "chat",
+    "sse",
+    "streaming",
+    "node",
+    "server",
+    "local-first"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -18,9 +26,31 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./claude": {
+      "types": "./dist/adapters/claude.d.ts",
+      "default": "./dist/adapters/claude.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
+  "peerDependencies": {
+    "@anthropic-ai/claude-agent-sdk": "*",
+    "mysql2": "*",
+    "pg": "*"
+  },
+  "peerDependenciesMeta": {
+    "@anthropic-ai/claude-agent-sdk": {
+      "optional": true
+    },
+    "mysql2": {
+      "optional": true
+    },
+    "pg": {
+      "optional": true
+    }
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
@@ -28,11 +58,16 @@
   },
   "dependencies": {
     "@fairway-kit/protocol": "0.4.2",
-    "better-sqlite3": "^11.0.0"
+    "better-sqlite3": "^11.0.0",
+    "busboy": "^1.6.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.0",
+    "@types/busboy": "^1.5.4",
     "@types/node": "^22.0.0",
+    "@types/pg": "^8.21.0",
+    "mysql2": "^3.23.3",
+    "pg": "^8.23.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
   }

@@ -7,12 +7,14 @@
  *   http.createServer(chat.handler).listen(8500);   // or chat.listen(8500)
  *   // Express:  app.use(async (req, res, next) => { if (!await chat.handler(req, res)) next(); })
  *
- * Single-writer, SQLite by default. Postgres/MySQL and the Claude adapter are
- * on the roadmap; a runner is any async (ctx, emit) => TurnResult, so you can
- * drive it with any agent today.
+ * Single-writer, SQLite by default; Postgres (postgres://, needs `pg`) and
+ * MySQL (mysql://, needs `mysql2`) are drop-in via the db URL. A runner is any
+ * async (ctx, emit) => TurnResult — use the ClaudeSDKRunner adapter, or drive
+ * it with any agent you like.
  */
 
 import http from "node:http";
+import { dirname, join, resolve } from "node:path";
 import { createHandler } from "./router.js";
 import { JobRegistry } from "./jobs.js";
 import { Store } from "./store.js";
@@ -29,6 +31,10 @@ export interface CreateAgentChatOptions {
   retentionDays?: number | null;
   /** Min ms between mid-turn assistant-row flushes (0 = every event). */
   flushInterval?: number;
+  /** Where uploaded files land (always local disk, independent of the database).
+   * Defaults next to a SQLite file, else ./fairway-attachments. `null` disables
+   * uploads entirely. */
+  attachmentsDir?: string | null;
 }
 
 export interface AgentChat {
@@ -44,7 +50,17 @@ export function createAgentChat(opts: CreateAgentChatOptions): AgentChat {
   const target = opts.backend ?? opts.dbUrl ?? opts.dbPath ?? "./fairway.db";
   const store = new Store(target);
   const registry = new JobRegistry(store, { flushInterval: opts.flushInterval });
-  const handler = createHandler({ store, registry, runner: opts.runner, prefix: opts.prefix });
+  const attachmentsDir =
+    opts.attachmentsDir === undefined
+      ? defaultAttachmentsDir(opts.dbUrl ?? opts.dbPath)
+      : opts.attachmentsDir ?? undefined;
+  const handler = createHandler({
+    store,
+    registry,
+    runner: opts.runner,
+    prefix: opts.prefix,
+    attachmentsDir,
+  });
   const retentionDays = opts.retentionDays === undefined ? 7 : opts.retentionDays;
 
   return {
@@ -75,6 +91,17 @@ export function createAgentChat(opts: CreateAgentChatOptions): AgentChat {
   };
 }
 
+/** Uploads land on local disk regardless of the database. Default next to a
+ * SQLite file (./chat.db -> ./chat-attachments), else ./fairway-attachments. */
+function defaultAttachmentsDir(dbTarget: string | undefined): string {
+  if (dbTarget && !dbTarget.includes("://")) {
+    const dir = dirname(resolve(dbTarget));
+    const stem = dbTarget.replace(/^.*\//, "").replace(/\.[^.]*$/, "") || "fairway";
+    return join(dir, `${stem}-attachments`);
+  }
+  return resolve("fairway-attachments");
+}
+
 /** Trivial runner for demos and tests: echoes the user message with one fake
  * tool call. Exercises the whole protocol path with no credentials. */
 export const EchoRunner: Runner = async (ctx, emit) => {
@@ -88,6 +115,16 @@ export const EchoRunner: Runner = async (ctx, emit) => {
 
 export { Store } from "./store.js";
 export { JobRegistry, compactableDeltaSeqs } from "./jobs.js";
-export { SQLiteBackend, backendFromUrl } from "./backends/sqlite.js";
+export { SQLiteBackend, PostgresBackend, MySQLBackend, backendFromUrl } from "./backends/index.js";
 export * as events from "./events.js";
-export type { Backend, Runner, TurnContext, TurnResult, Emit, Message, StampedEvent } from "./types.js";
+export type {
+  Backend,
+  Runner,
+  TurnContext,
+  TurnResult,
+  Emit,
+  Message,
+  StampedEvent,
+  PermissionRequest,
+  PermissionOutcome,
+} from "./types.js";

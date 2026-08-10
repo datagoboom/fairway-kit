@@ -11,7 +11,7 @@
 import { foldAll, isTerminal } from "@fairway-kit/protocol";
 import * as E from "./events.js";
 import { finalText, Store } from "./store.js";
-import type { Emit, Runner, StampedEvent, TurnContext } from "./types.js";
+import type { Emit, PermissionOutcome, Runner, StampedEvent, TurnContext } from "./types.js";
 
 const HEARTBEAT_MS = 20_000;
 const STOP_GRACE_MS = 5_000;
@@ -123,13 +123,7 @@ export class JobRegistry {
     ctx.newProviderSessionId = null;
 
     // Permission broker (PROTOCOL.md, Permissions).
-    (ctx as unknown as { requestPermission: unknown }).requestPermission = async (opt: {
-      tool: string;
-      kind?: string;
-      label?: string;
-      detail?: string;
-      input?: Record<string, unknown>;
-    }): Promise<string> => {
+    ctx.requestPermission = async (opt): Promise<PermissionOutcome> => {
       const allowed = await this.store.getAllowedTools(ctx.session.id as string);
       if (allowed.has(opt.tool)) return "allow";
       const requestId = randomId();
@@ -141,7 +135,7 @@ export class JobRegistry {
       live.pendingPermissions.delete(requestId);
       await emit(E.permissionResolved(requestId, chosen as never));
       if (chosen === "allow_session") await this.store.addAllowedTool(ctx.session.id as string, opt.tool);
-      return chosen;
+      return chosen as PermissionOutcome;
     };
 
     try {

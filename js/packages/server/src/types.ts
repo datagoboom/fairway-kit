@@ -5,6 +5,19 @@ import type { EmitEvent } from "./events.js";
 /** A stamped event (seq + ts added by the store). */
 export type StampedEvent = EmitEvent & { seq: number; ts: string };
 
+/** What a runner passes to ctx.requestPermission to open the HITL gate. */
+export interface PermissionRequest {
+  tool: string;
+  kind?: string;
+  label?: string;
+  detail?: string;
+  input?: Record<string, unknown>;
+}
+
+/** The gate's answer: "allow" (this call), "allow_session" (remember for the
+ * session), or "deny". */
+export type PermissionOutcome = "allow" | "allow_session" | "deny";
+
 /** emit(event) -> stamped event. Await it: the event is durable when it returns. */
 export type Emit = (ev: EmitEvent) => Promise<StampedEvent>;
 
@@ -42,6 +55,9 @@ export interface TurnContext {
   newProviderSessionId?: string | null;
   /** Registry-provided interrupt hook (e.g. an SDK client's interrupt). */
   gracefulStop?: () => Promise<void>;
+  /** Registry-provided HITL gate: resolves once the user (or a remembered
+   * session allow) answers. Present only while the turn is live. */
+  requestPermission?: (req: PermissionRequest) => Promise<PermissionOutcome>;
 }
 
 export type Runner = (ctx: TurnContext, emit: Emit) => Promise<TurnResult>;

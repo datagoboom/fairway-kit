@@ -5,7 +5,7 @@
 
 import { randomUUID } from "node:crypto";
 import { foldAll, type StreamItem } from "@fairway-kit/protocol";
-import { backendFromUrl } from "./backends/sqlite.js";
+import { backendFromUrl } from "./backends/index.js";
 import { Mutex, type Backend, type Message, type StampedEvent } from "./types.js";
 
 const now = () => new Date().toISOString();

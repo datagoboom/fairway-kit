@@ -54,6 +54,43 @@ jobs:
       - run: npm test                 # all packages; includes the shared fold conformance vectors
       - run: npm run typecheck
 
+  node-backends:
+    # The Node server's Postgres/MySQL backends against real databases. The fast
+    # `frontend` job covers SQLite; this one adds the networked dialects (pg and
+    # mysql2 are devDependencies, so `npm ci` installs them).
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: js }
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: fairway
+          POSTGRES_DB: fairway
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: fairway
+          MYSQL_DATABASE: fairway
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -pfairway"
+          --health-interval 10s --health-timeout 5s --health-retries 10
+    env:
+      FAIRWAY_TEST_POSTGRES_URL: postgresql://postgres:fairway@localhost:5432/fairway
+      FAIRWAY_TEST_MYSQL_URL: mysql://root:fairway@localhost:3306/fairway
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: js/package-lock.json }
+      - run: npm ci
+      - run: npm run build -w @fairway-kit/protocol   # server tests import built protocol
+      - run: npm test -w @fairway-kit/server          # backend conformance hits pg + mysql
+
   example:
     runs-on: ubuntu-latest
     defaults:
