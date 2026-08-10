@@ -40,6 +40,11 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: examples/chat/web/package-lock.json
+          cache-dependency-path: |
+            examples/chat/web/package-lock.json
+            js/package-lock.json
+      # The example consumes the lib from source via aliases, so the lib's
+      # deps (react types, react-markdown) must be installed too.
+      - run: npm ci --prefix ../../../js
       - run: npm ci
       - run: npx tsc -p tsconfig.json --noEmit
