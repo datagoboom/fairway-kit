@@ -99,6 +99,13 @@ export function useAgentChat(
     [client]
   );
 
+  // One-time (per client) protocol handshake: warn on version skew.
+  useEffect(() => {
+    void client.checkProtocol().then((warning) => {
+      if (warning) console.warn(warning);
+    });
+  }, [client]);
+
   // Mount / session switch: load history, then reattach to any running job.
   useEffect(() => {
     abortRef.current?.();

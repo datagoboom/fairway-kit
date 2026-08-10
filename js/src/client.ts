@@ -1,6 +1,6 @@
 /** Thin REST client for the HTTP surface (PROTOCOL.md section 11). */
 
-import type { ChatEvent, PermissionDecision } from "./events.js";
+import { PROTOCOL_VERSION, type ChatEvent, type PermissionDecision } from "./events.js";
 
 export interface Session {
   id: string;
@@ -30,6 +30,27 @@ export class ConflictError extends Error {
   constructor(public activeJobId: string) {
     super(`session has a running job: ${activeJobId}`);
   }
+}
+
+/** Compare client vs server protocol versions ("MAJOR.MINOR"). Returns a
+ * human-readable warning, or null when compatible. Additive-only rule from
+ * PROTOCOL.md 14: same major = compatible (unknown event types are opaque),
+ * but a version skew is still worth surfacing once. */
+export function protocolWarning(clientVersion: string, serverVersion: string): string | null {
+  if (clientVersion === serverVersion) return null;
+  const [cMaj] = clientVersion.split(".");
+  const [sMaj] = serverVersion.split(".");
+  if (cMaj !== sMaj) {
+    return (
+      `fairway protocol MAJOR version mismatch: client speaks ${clientVersion}, ` +
+      `server speaks ${serverVersion}. Expect breakage — upgrade the older side.`
+    );
+  }
+  return (
+    `fairway protocol version skew: client ${clientVersion}, server ${serverVersion}. ` +
+    `Same major, so this should work (unknown events render as opaque), but ` +
+    `consider upgrading the older side.`
+  );
 }
 
 export class AgentChatClient {
@@ -80,6 +101,26 @@ export class AgentChatClient {
   stop(jobId: string): Promise<{ status: string }> {
     return this.req("POST", `/jobs/${jobId}/stop`);
   }
+  meta(): Promise<{ protocol_version: string; extensions: string[] }> {
+    return this.req("GET", "/meta");
+  }
+
+  private protocolChecked = false;
+
+  /** Fetch server /meta once and compare protocol versions. Returns the
+   * warning (also on subsequent calls' first-result basis), or null when
+   * compatible or unreachable. Never throws. */
+  async checkProtocol(): Promise<string | null> {
+    if (this.protocolChecked) return null;
+    this.protocolChecked = true;
+    try {
+      const { protocol_version } = await this.meta();
+      return protocolWarning(PROTOCOL_VERSION, protocol_version);
+    } catch {
+      return null; // meta unreachable — real requests will surface the error
+    }
+  }
+
   resolvePermission(
     jobId: string,
     requestId: string,

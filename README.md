@@ -111,6 +111,42 @@ async def my_runner(ctx, emit):
 Durability, sequencing, fan-out, persistence, and lifecycle are handled around
 you — a runner only emits.
 
+## Running write-capable agents on your own machine
+
+A local agent runs with *your* filesystem and *your* credentials, so the gap
+between "reads my notes" and "can delete them" deserves deliberate
+configuration. fairway's model has three rings:
+
+```python
+runner = ClaudeSDKRunner(
+    tools=["Read", "Glob", "Grep", "Write", "Edit", "Bash"],  # ring 3: exists at all
+    allowed_tools=["Read", "Glob", "Grep"],                   # ring 1: pre-approved
+    permission_mode="default",                                # ring 2: everything else asks
+    cwd="/path/to/the/project",   # scope file tools to one directory
+)
+```
+
+1. **`tools`** is the outer boundary — anything not listed doesn't exist for
+   the agent. Start minimal and add.
+2. **`allowed_tools`** is the pre-approved set: these run without asking.
+   Reserve it for read-only tools.
+3. **Everything in between goes through the permission gate** (with
+   `permission_mode="default"`): the turn pauses, an approval card renders
+   inline in the chat, and nothing executes until you click Allow — or
+   "Always allow", which remembers the tool for that session. Approvals are
+   recorded in the event log, so the transcript shows exactly what you
+   authorized. A paused turn can always be stopped (stop denies pending
+   requests first).
+
+Two settings to leave alone unless you know why you're changing them:
+`strict_mcp_config` defaults to `True` so host-level MCP servers (from your
+personal CLI config) can't silently widen the agent's tool surface, and
+`permission_mode="bypassPermissions"` disables the gate entirely — acceptable
+for a read-only tool set, reckless with `Write`/`Bash`.
+
+For custom (non-Claude-SDK) runners, the same gate is one call:
+`decision = await ctx.request_permission(tool="deploy", kind="shell", label="Deploy")`.
+
 ## Frontend quickstart
 
 ```tsx
