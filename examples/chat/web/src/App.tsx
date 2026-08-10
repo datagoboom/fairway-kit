@@ -12,6 +12,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Alert,
   AppBar,
+  Autocomplete,
   Box,
   Button,
   Chip,
@@ -23,6 +24,7 @@ import {
   List,
   ListItemButton,
   ListItemText,
+  MenuItem,
   Paper,
   TextField,
   ThemeProvider,
@@ -31,7 +33,17 @@ import {
   Typography,
   createTheme,
 } from "@mui/material";
-import { Check, Minus, Paperclip, Plus, SendHorizontal, ShieldQuestion, Square, X } from "lucide-react";
+import {
+  Check,
+  Minus,
+  Paperclip,
+  Plus,
+  SendHorizontal,
+  Settings as SettingsIcon,
+  ShieldQuestion,
+  Square,
+  X,
+} from "lucide-react";
 import { AgentChatClient, type Attachment, type Session } from "fairway-kit";
 import {
   ChatItem,
@@ -63,6 +75,7 @@ export function App() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<"chat" | "settings">("chat");
 
   useEffect(() => {
     void client.listSessions().then(({ sessions }) => {
@@ -116,21 +129,27 @@ export function App() {
             onError={setError}
             onExtensionEvent={(ev) => console.log("extension event", ev)}
           >
-            <Header />
+            <Header view={view} onToggleSettings={() => setView((v) => (v === "chat" ? "settings" : "chat"))} />
             {error && (
               <Alert severity="error" onClose={() => setError(null)} sx={{ borderRadius: 0 }}>
                 {error}
               </Alert>
             )}
-            <Box sx={{ flex: 1, minHeight: 0 }}>
-              <ChatPanel
-                components={itemComponents}
-                jumpLabel={<Chip size="small" label="New messages" color="primary" clickable />}
-              >
-                {(row) => <MessageBubble row={row} />}
-              </ChatPanel>
-            </Box>
-            <Composer disabled={!sessionId} />
+            {view === "settings" ? (
+              <SettingsPage onClose={() => setView("chat")} />
+            ) : (
+              <>
+                <Box sx={{ flex: 1, minHeight: 0 }}>
+                  <ChatPanel
+                    components={itemComponents}
+                    jumpLabel={<Chip size="small" label="New messages" color="primary" clickable />}
+                  >
+                    {(row) => <MessageBubble row={row} />}
+                  </ChatPanel>
+                </Box>
+                <Composer disabled={!sessionId} />
+              </>
+            )}
           </ChatProvider>
         </Box>
       </Box>
@@ -140,7 +159,7 @@ export function App() {
 
 // -- header: app-owned, driven by useChatContext ------------------------------
 
-function Header() {
+function Header({ view, onToggleSettings }: { view: string; onToggleSettings: () => void }) {
   const { connection, streaming, stop } = useChatContext();
   const color =
     connection === "open" ? "success.main"
@@ -165,8 +184,194 @@ function Header() {
             Stop
           </Button>
         )}
+        <Tooltip title={view === "settings" ? "Back to chat" : "Settings"}>
+          <IconButton onClick={onToggleSettings} color={view === "settings" ? "primary" : "default"}>
+            <SettingsIcon size={18} />
+          </IconButton>
+        </Tooltip>
       </Toolbar>
     </AppBar>
+  );
+}
+
+// -- settings page -------------------------------------------------------------
+
+interface ServerSettings {
+  runner: "claude" | "echo";
+  model: string;
+  auth: "inherit" | "subscription" | "api";
+  permission_mode: "default" | "acceptEdits" | "bypassPermissions" | "dontAsk";
+  tools: string[];
+  allowed_tools: string[];
+  system_prompt: string;
+  max_turns: number;
+}
+
+function SettingsPage({ onClose }: { onClose: () => void }) {
+  const [settings, setSettings] = useState<ServerSettings | null>(null);
+  const [knownTools, setKnownTools] = useState<string[]>([]);
+  const [status, setStatus] = useState<{ kind: "ok" | "err"; msg: string } | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    void fetch("/api/settings")
+      .then((r) => r.json())
+      .then((d) => {
+        setSettings(d.settings);
+        setKnownTools(d.known_tools);
+      })
+      .catch((e) => setStatus({ kind: "err", msg: String(e) }));
+  }, []);
+
+  if (!settings) {
+    return (
+      <Box sx={{ p: 3 }}>
+        {status ? <Alert severity="error">{status.msg}</Alert> : <CircularProgress size={20} />}
+      </Box>
+    );
+  }
+
+  const set = <K extends keyof ServerSettings>(key: K, value: ServerSettings[K]) =>
+    setSettings((cur) => (cur ? { ...cur, [key]: value } : cur));
+
+  const save = () => {
+    setSaving(true);
+    setStatus(null);
+    void fetch("/api/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(settings),
+    })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}: ${await r.text()}`);
+        const d = await r.json();
+        setSettings(d.settings);
+        setStatus({ kind: "ok", msg: "Saved. New settings apply from the next message." });
+      })
+      .catch((e) => setStatus({ kind: "err", msg: String(e) }))
+      .finally(() => setSaving(false));
+  };
+
+  const gated = settings.tools.filter((t) => !settings.allowed_tools.includes(t));
+  const claude = settings.runner === "claude";
+
+  return (
+    <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", p: 3 }}>
+      <Box sx={{ maxWidth: 640, mx: "auto", display: "flex", flexDirection: "column", gap: 2.5 }}>
+        <Typography variant="h6">Settings</Typography>
+        {status && (
+          <Alert severity={status.kind === "ok" ? "success" : "error"} onClose={() => setStatus(null)}>
+            {status.msg}
+          </Alert>
+        )}
+
+        <TextField
+          select
+          label="Runner"
+          value={settings.runner}
+          onChange={(e) => set("runner", e.target.value as ServerSettings["runner"])}
+          helperText="Echo mode needs no credentials and never calls a model"
+        >
+          <MenuItem value="claude">Claude Agent SDK</MenuItem>
+          <MenuItem value="echo">Echo (offline)</MenuItem>
+        </TextField>
+
+        {claude && (
+          <>
+            <TextField
+              label="Model"
+              value={settings.model}
+              onChange={(e) => set("model", e.target.value)}
+              helperText='Model ID or alias, e.g. "claude-opus-4-8"'
+            />
+            <TextField
+              select
+              label="Auth mode"
+              value={settings.auth}
+              onChange={(e) => set("auth", e.target.value as ServerSettings["auth"])}
+              helperText="How the Claude CLI authenticates: inherit the environment, force your subscription login, or force an API key"
+            >
+              <MenuItem value="inherit">Inherit environment</MenuItem>
+              <MenuItem value="subscription">Subscription (claude login)</MenuItem>
+              <MenuItem value="api">API key (ANTHROPIC_API_KEY)</MenuItem>
+            </TextField>
+            <TextField
+              select
+              label="Permission mode"
+              value={settings.permission_mode}
+              onChange={(e) => set("permission_mode", e.target.value as ServerSettings["permission_mode"])}
+              helperText={
+                settings.permission_mode === "bypassPermissions"
+                  ? "Everything runs without asking. Fine for read-only tools, reckless with Write or Bash."
+                  : "With 'default', tools outside the pre-approved set pause for inline approval in the chat"
+              }
+            >
+              <MenuItem value="default">default (gate non-approved tools)</MenuItem>
+              <MenuItem value="acceptEdits">acceptEdits</MenuItem>
+              <MenuItem value="dontAsk">dontAsk (deny non-approved)</MenuItem>
+              <MenuItem value="bypassPermissions">bypassPermissions</MenuItem>
+            </TextField>
+            <Autocomplete
+              multiple
+              options={knownTools}
+              value={settings.tools}
+              onChange={(_, v) => {
+                set("tools", v);
+                set("allowed_tools", settings.allowed_tools.filter((t) => v.includes(t)));
+              }}
+              renderInput={(p) => (
+                <TextField {...p} label="Available tools" helperText="The outer boundary: tools not listed here do not exist for the agent" />
+              )}
+            />
+            <Autocomplete
+              multiple
+              options={settings.tools}
+              value={settings.allowed_tools}
+              onChange={(_, v) => set("allowed_tools", v)}
+              renderInput={(p) => (
+                <TextField
+                  {...p}
+                  label="Pre-approved tools"
+                  helperText={
+                    gated.length > 0
+                      ? `Run without asking. Currently gated: ${gated.join(", ")}`
+                      : "Run without asking. Nothing is gated right now."
+                  }
+                />
+              )}
+            />
+            <TextField
+              label="System prompt"
+              value={settings.system_prompt}
+              onChange={(e) => set("system_prompt", e.target.value)}
+              multiline
+              minRows={3}
+            />
+            <TextField
+              label="Max turns"
+              type="number"
+              value={settings.max_turns}
+              onChange={(e) => set("max_turns", Math.max(1, Math.min(300, Number(e.target.value) || 1)))}
+              helperText="Upper bound on agent loop iterations per message"
+              sx={{ maxWidth: 200 }}
+            />
+          </>
+        )}
+
+        <Box sx={{ display: "flex", gap: 1.5 }}>
+          <Button variant="contained" onClick={save} disabled={saving}>
+            {saving ? "Saving" : "Save"}
+          </Button>
+          <Button variant="outlined" onClick={onClose}>
+            Back to chat
+          </Button>
+        </Box>
+        <Typography variant="caption" color="text.secondary">
+          Settings persist to a JSON file next to the server and apply to the next
+          message. In-flight turns keep the configuration they started with.
+        </Typography>
+      </Box>
+    </Box>
   );
 }
 
