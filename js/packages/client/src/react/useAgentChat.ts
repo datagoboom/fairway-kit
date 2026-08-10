@@ -9,9 +9,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AgentChatClient, ConflictError, type Attachment, type Message } from "../client.js";
-import { fold, type StreamItem } from "../fold.js";
+import { fold, type StreamItem } from "@fairway-kit/protocol";
 import { streamJob } from "../stream.js";
-import { isTerminal, type ChatEvent, type PermissionDecision } from "../events.js";
+import { isTerminal, type ChatEvent, type PermissionDecision } from "@fairway-kit/protocol";
 
 export interface UseAgentChatOptions {
   /** Handler for x_* / unknown events (sync hints, viewer commands, ...). */

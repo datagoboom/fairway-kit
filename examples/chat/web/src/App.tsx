@@ -44,7 +44,7 @@ import {
   Square,
   X,
 } from "lucide-react";
-import { AgentChatClient, type Attachment, type Session } from "fairway-kit";
+import { AgentChatClient, type Attachment, type Session } from "@fairway-kit/client";
 import {
   ChatItem,
   ChatPanel,
@@ -53,9 +53,9 @@ import {
   type ChatComponents,
   type ChatRow,
   type ItemComponentProps,
-} from "fairway-kit/react";
-import { MarkdownText } from "fairway-kit/react/markdown";
-import type { ErrorItem, PermissionItem, TextItem, ToolItem } from "fairway-kit";
+} from "@fairway-kit/client/react";
+import { MarkdownText } from "@fairway-kit/client/react/markdown";
+import type { ErrorItem, PermissionItem, TextItem, ToolItem } from "@fairway-kit/client";
 
 const client = new AgentChatClient("/api/chat");
 

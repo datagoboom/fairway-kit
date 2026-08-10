@@ -8,11 +8,13 @@
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
+    "resolveJsonModule": true,
     "paths": {
-      "fairway-kit/react/markdown": ["../../../js/src/react/markdown.tsx"],
-      "fairway-kit/react": ["../../../js/src/react/index.ts"],
-      "fairway-kit": ["../../../js/src/index.ts"]
+      "@fairway-kit/client/react/markdown": ["../../../js/packages/client/src/react/markdown.tsx"],
+      "@fairway-kit/client/react": ["../../../js/packages/client/src/react/index.ts"],
+      "@fairway-kit/client": ["../../../js/packages/client/src/index.ts"],
+      "@fairway-kit/protocol": ["../../../js/packages/protocol/src/index.ts"]
     }
   },
-  "include": ["src", "../../../js/src"]
+  "include": ["src"]
 }

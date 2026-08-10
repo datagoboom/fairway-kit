@@ -11,7 +11,7 @@
 
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import type { AgentChatClient, Message } from "../client.js";
-import { foldAll, type StreamItem } from "../fold.js";
+import { foldAll, type StreamItem } from "@fairway-kit/protocol";
 import { useAgentChat, type UseAgentChatOptions } from "./useAgentChat.js";
 
 export type ChatInstance = ReturnType<typeof useAgentChat>;

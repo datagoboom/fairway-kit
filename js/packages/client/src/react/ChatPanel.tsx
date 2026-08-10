@@ -20,8 +20,8 @@ import {
   type ReactNode,
 } from "react";
 import type { Attachment } from "../client.js";
-import type { ChatEvent } from "../events.js";
-import type { ErrorItem, PermissionItem, StreamItem, TextItem, ToolItem } from "../fold.js";
+import type { ChatEvent } from "@fairway-kit/protocol";
+import type { ErrorItem, PermissionItem, StreamItem, TextItem, ToolItem } from "@fairway-kit/protocol";
 import { useChatContext, useChatRows, type ChatRow } from "./context.js";
 
 export interface ItemComponentProps<I extends StreamItem = StreamItem> {

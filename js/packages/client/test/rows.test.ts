@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildRows } from "../src/react/context";
 import type { Message } from "../src/client";
-import type { StreamItem } from "../src/fold";
+import type { StreamItem } from "@fairway-kit/protocol";
 
 const user = (id: string, content: string): Message => ({
   id, session_id: "s", role: "user", content, events: null, streaming: false, created_at: "",

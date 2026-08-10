@@ -8,8 +8,9 @@ import { fold, foldAll, type StreamItem } from "../src/fold";
 import type { ChatEvent } from "../src/events";
 
 const here = dirname(fileURLToPath(import.meta.url));
+// repo root: packages/protocol/test -> ../../../.. -> then protocol/fold-vectors.json
 const vectors = JSON.parse(
-  readFileSync(join(here, "..", "..", "protocol", "fold-vectors.json"), "utf8")
+  readFileSync(join(here, "..", "..", "..", "..", "protocol", "fold-vectors.json"), "utf8")
 ) as { cases: { name: string; events: ChatEvent[]; items: StreamItem[] }[] };
 
 describe("fold conformance vectors", () => {

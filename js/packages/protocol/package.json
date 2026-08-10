@@ -1,0 +1,33 @@
+{
+  "name": "@fairway-kit/protocol",
+  "version": "0.4.0",
+  "description": "Agent Chat Protocol: event types and the normative fold, shared by fairway-kit clients and servers",
+  "license": "MIT",
+  "author": "Andrew Long",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/datagoboom/fairway-kit.git",
+    "directory": "js/packages/protocol"
+  },
+  "homepage": "https://github.com/datagoboom/fairway-kit",
+  "keywords": ["agent", "chat", "protocol", "sse", "streaming", "fold", "local-first"],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

@@ -6,7 +6,7 @@
  * inherent (server only sends seq > since). One bad frame is skipped, never fatal.
  */
 
-import { type ChatEvent, isTerminal } from "./events.js";
+import { type ChatEvent, isTerminal } from "@fairway-kit/protocol";
 
 export interface StreamOptions {
   since?: number;

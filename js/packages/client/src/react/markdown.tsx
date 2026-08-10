@@ -12,7 +12,7 @@ import { memo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { ItemComponentProps } from "./ChatPanel.js";
-import type { TextItem } from "../fold.js";
+import type { TextItem } from "@fairway-kit/protocol";
 
 /** Memoized so streaming deltas only re-parse the item that's growing. */
 export const MarkdownText = memo(function MarkdownText({ item }: ItemComponentProps<TextItem>) {

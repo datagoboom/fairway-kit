@@ -1,25 +1,40 @@
 name: release
 
-# Publishes both packages when a v* tag is pushed. No stored secrets:
-# PyPI uses OIDC trusted publishing; npm uses OIDC trusted publishing after
-# the first (manual) publish. See docs/RELEASING.md (local) for the one-time setup.
+# On a v* tag, publishes whichever packages match the tag version. No stored
+# secrets: PyPI and npm both use OIDC trusted publishing. The Python and JS
+# sides version independently — a tag publishes the JS packages when they match
+# it and PyPI when python matches, so a JS-only release skips PyPI and vice
+# versa. See docs/RELEASING.md (local) for the one-time trusted-publisher setup.
 
 on:
   push:
     tags: ["v*"]
 
 jobs:
-  check-versions:
+  versions:
     runs-on: ubuntu-latest
+    outputs:
+      publish_js: ${{ steps.check.outputs.publish_js }}
+      publish_py: ${{ steps.check.outputs.publish_py }}
     steps:
       - uses: actions/checkout@v4
-      - name: Tag must match both package versions
+      - id: check
+        name: Decide which packages this tag releases
         run: |
           TAG="${GITHUB_REF_NAME#v}"
           PY=$(grep -m1 '^version = ' python/pyproject.toml | cut -d'"' -f2)
-          JS=$(node -p "require('./js/package.json').version")
-          echo "tag=$TAG python=$PY js=$JS"
-          [ "$TAG" = "$PY" ] && [ "$TAG" = "$JS" ] || { echo "version mismatch"; exit 1; }
+          PROTO=$(node -p "require('./js/packages/protocol/package.json').version")
+          CLIENT=$(node -p "require('./js/packages/client/package.json').version")
+          echo "tag=$TAG python=$PY protocol=$PROTO client=$CLIENT"
+          # The two JS packages release together and must share the tag version.
+          if [ "$PROTO" = "$TAG" ] && [ "$CLIENT" = "$TAG" ]; then
+            echo "publish_js=true" >> "$GITHUB_OUTPUT"
+          elif [ "$PROTO" = "$TAG" ] || [ "$CLIENT" = "$TAG" ]; then
+            echo "JS packages disagree with the tag" >&2; exit 1
+          else
+            echo "publish_js=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "publish_py=$([ "$PY" = "$TAG" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
   test-backend:
     runs-on: ubuntu-latest
@@ -41,11 +56,13 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: npm ci
-      - run: npx vitest run
-      - run: npx tsc -p tsconfig.json --noEmit
+      - run: npm run build
+      - run: npm test
+      - run: npm run typecheck
 
   publish-pypi:
-    needs: [check-versions, test-backend, test-frontend]
+    needs: [versions, test-backend, test-frontend]
+    if: needs.versions.outputs.publish_py == 'true'
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -63,11 +80,12 @@ jobs:
           packages-dir: python/dist/
 
   publish-npm:
-    needs: [check-versions, test-backend, test-frontend]
+    needs: [versions, test-backend, test-frontend]
+    if: needs.versions.outputs.publish_js == 'true'
     runs-on: ubuntu-latest
     environment: npm
     permissions:
-      id-token: write   # OIDC trusted publishing (after first manual publish)
+      id-token: write   # OIDC trusted publishing (after each package's first manual publish)
       contents: read
     defaults:
       run: { working-directory: js }
@@ -80,4 +98,6 @@ jobs:
       - run: npm install -g npm@latest   # trusted publishing needs npm >= 11.5.1
       - run: npm ci
       - run: npm run build
-      - run: npm publish
+      # protocol first — client declares it as a dependency.
+      - run: npm publish -w @fairway-kit/protocol
+      - run: npm publish -w @fairway-kit/client

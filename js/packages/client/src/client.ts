@@ -1,6 +1,6 @@
 /** Thin REST client for the HTTP surface (PROTOCOL.md section 11). */
 
-import { PROTOCOL_VERSION, type ChatEvent, type PermissionDecision } from "./events.js";
+import { PROTOCOL_VERSION, type ChatEvent, type PermissionDecision } from "@fairway-kit/protocol";
 
 export interface Session {
   id: string;
