@@ -1,6 +1,6 @@
 # fairway
 
-[![ci](https://github.com/datagoboom/fairway/actions/workflows/ci.yml/badge.svg)](https://github.com/datagoboom/fairway/actions/workflows/ci.yml)
+[![ci](https://github.com/datagoboom/fairway-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/datagoboom/fairway-kit/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 **A dev kit for building local, agent-backed applications.** Two small
@@ -63,8 +63,8 @@ a refresh is byte-for-byte what you saw streaming.
 
 | Package | What it is |
 |---|---|
-| `fairway` (Python) | FastAPI router factory, SQLite-backed event log + job registry, runner interface, Claude Agent SDK adapter |
-| `fairway-kit` (TypeScript) | SSE stream client with seq resume, the fold, typed REST client, React hook + headless components |
+| `fairway-kit` on PyPI (`import fairway`) | FastAPI router factory, SQLite-backed event log + job registry, runner interface, Claude Agent SDK adapter |
+| `fairway-kit` on npm | SSE stream client with seq resume, the fold, typed REST client, React hook + headless components |
 | [`PROTOCOL.md`](PROTOCOL.md) | The versioned wire + storage contract both packages implement |
 
 Not yet published to PyPI/npm — consume from source for now (see the example app).

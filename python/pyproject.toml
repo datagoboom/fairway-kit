@@ -25,9 +25,9 @@ dependencies = [
 claude = ["claude-agent-sdk>=0.2"]
 
 [project.urls]
-Homepage = "https://github.com/datagoboom/fairway"
-Repository = "https://github.com/datagoboom/fairway"
-Protocol = "https://github.com/datagoboom/fairway/blob/main/PROTOCOL.md"
+Homepage = "https://github.com/datagoboom/fairway-kit"
+Repository = "https://github.com/datagoboom/fairway-kit"
+Protocol = "https://github.com/datagoboom/fairway-kit/blob/main/PROTOCOL.md"
 
 [dependency-groups]
 dev = [
