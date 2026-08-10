@@ -1,6 +1,6 @@
 [project]
 name = "fairway-kit"
-version = "0.1.1"
+version = "0.1.2"
 description = "Dev kit backend for local agent-backed apps: durable, resumable agent chat over FastAPI + SQLite"
 license = "MIT"
 readme = "README.md"

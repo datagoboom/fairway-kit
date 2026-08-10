@@ -49,7 +49,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
-      id-token: write   # OIDC trusted publishing — no token
+      id-token: write   # OIDC trusted publishing, no token
+      contents: read    # a permissions block zeroes everything unlisted; checkout needs this
     defaults:
       run: { working-directory: python }
     steps:
