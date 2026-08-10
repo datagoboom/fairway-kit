@@ -157,3 +157,7 @@ implementations.
 
 Single-process + SQLite by design for now: the target is the enormous class of
 apps that are one process serving one team, not horizontal-scale chat SaaS.
+
+## License
+
+[MIT](LICENSE)
