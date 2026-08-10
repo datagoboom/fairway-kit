@@ -1,0 +1,142 @@
+{
+  "$comment": "Cross-language conformance vectors for the normative fold (PROTOCOL.md section 5). Both python/tests/test_fold.py and js/test/fold.test.ts run every case. Events omit ts for brevity; the fold never reads ts.",
+  "cases": [
+    {
+      "name": "text deltas append, text_block replaces and closes the run",
+      "events": [
+        { "seq": 1, "type": "message_start", "message_id": "m1" },
+        { "seq": 2, "type": "text", "content": "Hel" },
+        { "seq": 3, "type": "text", "content": "lo " },
+        { "seq": 4, "type": "text", "content": "wor" },
+        { "seq": 5, "type": "text_block", "content": "Hello world." },
+        { "seq": 6, "type": "done", "message_id": "m1" }
+      ],
+      "items": [
+        { "type": "text", "content": "Hello world.", "open": false }
+      ]
+    },
+    {
+      "name": "replay after compaction (deltas removed) folds identically",
+      "events": [
+        { "seq": 1, "type": "message_start", "message_id": "m1" },
+        { "seq": 5, "type": "text_block", "content": "Hello world." },
+        { "seq": 6, "type": "done", "message_id": "m1" }
+      ],
+      "items": [
+        { "type": "text", "content": "Hello world.", "open": false }
+      ]
+    },
+    {
+      "name": "tool_call closes the open text run; tool_result matches by id",
+      "events": [
+        { "seq": 1, "type": "message_start", "message_id": "m1" },
+        { "seq": 2, "type": "text", "content": "Checking" },
+        { "seq": 3, "type": "tool_call", "id": "t1", "tool": "read_file", "kind": "system", "label": "Read file", "detail": "config.json" },
+        { "seq": 4, "type": "tool_result", "id": "t1", "ok": true, "summary": "142 lines" },
+        { "seq": 5, "type": "text", "content": "Found it." },
+        { "seq": 6, "type": "text_block", "content": "Found it." },
+        { "seq": 7, "type": "done", "message_id": "m1" }
+      ],
+      "items": [
+        { "type": "text", "content": "Checking", "open": false },
+        { "type": "tool", "id": "t1", "tool": "read_file", "kind": "system", "label": "Read file", "detail": "config.json", "status": "ok", "summary": "142 lines" },
+        { "type": "text", "content": "Found it.", "open": false }
+      ]
+    },
+    {
+      "name": "two concurrent tools resolve by id, not most-recent-undone",
+      "events": [
+        { "seq": 1, "type": "message_start", "message_id": "m1" },
+        { "seq": 2, "type": "tool_call", "id": "a", "tool": "search", "kind": "system", "label": "Search" },
+        { "seq": 3, "type": "tool_call", "id": "b", "tool": "fetch", "kind": "system", "label": "Fetch" },
+        { "seq": 4, "type": "tool_result", "id": "a", "ok": false, "summary": "timeout" },
+        { "seq": 5, "type": "tool_result", "id": "b", "ok": true },
+        { "seq": 6, "type": "done", "message_id": "m1" }
+      ],
+      "items": [
+        { "type": "tool", "id": "a", "tool": "search", "kind": "system", "label": "Search", "status": "err", "summary": "timeout" },
+        { "type": "tool", "id": "b", "tool": "fetch", "kind": "system", "label": "Fetch", "status": "ok" }
+      ]
+    },
+    {
+      "name": "orphan tool_result becomes a visible flagged item",
+      "events": [
+        { "seq": 1, "type": "message_start", "message_id": "m1" },
+        { "seq": 2, "type": "tool_result", "id": "ghost", "ok": true, "summary": "??" },
+        { "seq": 3, "type": "done", "message_id": "m1" }
+      ],
+      "items": [
+        { "type": "tool", "id": "ghost", "status": "ok", "summary": "??", "orphan": true }
+      ]
+    },
+    {
+      "name": "error terminal marks running tools interrupted, closes open text, appends error item",
+      "events": [
+        { "seq": 1, "type": "message_start", "message_id": "m1" },
+        { "seq": 2, "type": "text", "content": "Working" },
+        { "seq": 3, "type": "tool_call", "id": "t1", "tool": "bash", "kind": "system", "label": "Run command" },
+        { "seq": 4, "type": "error", "message": "provider timeout", "message_id": "m1" }
+      ],
+      "items": [
+        { "type": "text", "content": "Working", "open": false },
+        { "type": "tool", "id": "t1", "tool": "bash", "kind": "system", "label": "Run command", "status": "interrupted" },
+        { "type": "error", "message": "provider timeout" }
+      ]
+    },
+    {
+      "name": "cancelled closes open thinking run",
+      "events": [
+        { "seq": 1, "type": "message_start", "message_id": "m1" },
+        { "seq": 2, "type": "thinking", "content": "Let me " },
+        { "seq": 3, "type": "thinking", "content": "consider" },
+        { "seq": 4, "type": "cancelled", "message_id": "m1" }
+      ],
+      "items": [
+        { "type": "thinking", "content": "Let me consider", "open": false }
+      ]
+    },
+    {
+      "name": "text after a closed block starts a new run",
+      "events": [
+        { "seq": 1, "type": "message_start", "message_id": "m1" },
+        { "seq": 2, "type": "text", "content": "First." },
+        { "seq": 3, "type": "text_block", "content": "First." },
+        { "seq": 4, "type": "text", "content": "Second." },
+        { "seq": 5, "type": "text_block", "content": "Second." },
+        { "seq": 6, "type": "done", "message_id": "m1" }
+      ],
+      "items": [
+        { "type": "text", "content": "First.", "open": false },
+        { "type": "text", "content": "Second.", "open": false }
+      ]
+    },
+    {
+      "name": "extension and unknown events fold to opaque items in place",
+      "events": [
+        { "seq": 1, "type": "message_start", "message_id": "m1" },
+        { "seq": 2, "type": "x_sync_hint", "target": "finance" },
+        { "seq": 3, "type": "text", "content": "Done." },
+        { "seq": 4, "type": "text_block", "content": "Done." },
+        { "seq": 5, "type": "some_future_type", "payload": 1 },
+        { "seq": 6, "type": "done", "message_id": "m1" }
+      ],
+      "items": [
+        { "type": "opaque", "event": { "seq": 2, "type": "x_sync_hint", "target": "finance" } },
+        { "type": "text", "content": "Done.", "open": false },
+        { "type": "opaque", "event": { "seq": 5, "type": "some_future_type", "payload": 1 } }
+      ]
+    },
+    {
+      "name": "mid-stream snapshot: open text run and running tool remain open (no terminal yet)",
+      "events": [
+        { "seq": 1, "type": "message_start", "message_id": "m1" },
+        { "seq": 2, "type": "tool_call", "id": "t1", "tool": "search", "kind": "system", "label": "Search" },
+        { "seq": 3, "type": "text", "content": "Partial" }
+      ],
+      "items": [
+        { "type": "tool", "id": "t1", "tool": "search", "kind": "system", "label": "Search", "status": "running" },
+        { "type": "text", "content": "Partial", "open": true }
+      ]
+    }
+  ]
+}

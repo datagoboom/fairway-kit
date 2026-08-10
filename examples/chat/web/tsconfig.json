@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@fairway/client/react/markdown": ["../../../js/src/react/markdown.tsx"],
+      "@fairway/client/react": ["../../../js/src/react/index.ts"],
+      "@fairway/client": ["../../../js/src/index.ts"]
+    }
+  },
+  "include": ["src", "../../../js/src"]
+}

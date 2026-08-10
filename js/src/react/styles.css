@@ -1,0 +1,199 @@
+/* Optional default look for the fairway chat components.
+ * Import from your app:  import "@fairway/client/react/styles.css";
+ * Everything targets the stable data-* attributes, so overriding any part of
+ * it from app CSS needs no extra specificity tricks. Colors derive from a few
+ * custom properties — retheme by redefining them on any ancestor. */
+
+[data-fairway-panel] {
+  --fw-bg: transparent;
+  --fw-bubble-assistant: #1a1e22;
+  --fw-bubble-user: #2b4a66;
+  --fw-border: #2a2e33;
+  --fw-text-dim: #8a93a0;
+  --fw-error: #e07a7a;
+  --fw-accent: #22303c;
+  background: var(--fw-bg);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+[data-fairway-viewport] {
+  padding: 16px;
+  scroll-behavior: smooth;
+}
+
+[data-fairway-message] {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 10px;
+}
+[data-fairway-message][data-role="user"] {
+  justify-content: flex-end;
+}
+
+[data-fairway-bubble] {
+  max-width: 72%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--fw-border);
+  background: var(--fw-bubble-assistant);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-wrap: anywhere;
+}
+[data-fairway-message][data-role="user"] [data-fairway-bubble] {
+  background: var(--fw-bubble-user);
+}
+[data-fairway-message][data-live] [data-fairway-bubble] {
+  border-color: #3a5a3a;
+}
+
+[data-fairway-item="thinking"] {
+  color: var(--fw-text-dim);
+  font-style: italic;
+  font-size: 13px;
+}
+
+[data-fairway-item="tool"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: #14181c;
+  border: 1px solid #3a4a5a;
+  max-width: 100%;
+}
+[data-fairway-item="tool"][data-status="ok"] { border-color: #3a5a3a; }
+[data-fairway-item="tool"][data-status="err"] { border-color: #6a3a3a; }
+[data-fairway-item="tool"][data-status="interrupted"] { border-color: #6a5a3a; }
+/* status dot — pure CSS, no glyphs */
+[data-fairway-tool-label]::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 7px;
+  background: #6a7684;
+  vertical-align: baseline;
+}
+[data-fairway-item="tool"][data-status="running"] [data-fairway-tool-label]::before {
+  background: #c9a24a;
+  animation: fw-pulse 1.2s ease-in-out infinite;
+}
+[data-fairway-item="tool"][data-status="ok"] [data-fairway-tool-label]::before { background: #5aa46a; }
+[data-fairway-item="tool"][data-status="err"] [data-fairway-tool-label]::before { background: #e07a7a; }
+[data-fairway-item="tool"][data-status="interrupted"] [data-fairway-tool-label]::before { background: #c9a24a; }
+
+@keyframes fw-pulse {
+  50% { opacity: 0.35; }
+}
+[data-fairway-tool-detail],
+[data-fairway-tool-summary] {
+  color: var(--fw-text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-fairway-tool-detail]::before,
+[data-fairway-tool-summary]::before {
+  content: "· ";
+}
+
+[data-fairway-item="error"] {
+  color: var(--fw-error);
+}
+
+/* bouncing-dots working indicator */
+[data-fairway-item="typing"] {
+  display: inline-flex;
+  gap: 5px;
+  padding: 4px 0 2px;
+}
+[data-fairway-item="typing"] span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--fw-text-dim);
+  animation: fw-bounce 1.2s ease-in-out infinite;
+}
+[data-fairway-item="typing"] span:nth-child(2) { animation-delay: 0.15s; }
+[data-fairway-item="typing"] span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes fw-bounce {
+  0%, 60%, 100% { transform: none; opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+[data-fairway-jump] {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--fw-border);
+  background: var(--fw-accent);
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+[data-fairway-input] {
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid var(--fw-border);
+}
+[data-fairway-input-field] {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--fw-border);
+  background: #16191c;
+  color: inherit;
+  font-size: 14px;
+  outline: none;
+}
+[data-fairway-send],
+[data-fairway-stop] {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--fw-border);
+  background: var(--fw-accent);
+  color: inherit;
+  cursor: pointer;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+[data-fairway-stop] {
+  background: #5c2b2b;
+}
+[data-fairway-send]:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* markdown (when using the MarkdownText override) */
+[data-markdown] > *:not(:last-child) { margin-bottom: 0.6em; }
+[data-markdown] h1, [data-markdown] h2, [data-markdown] h3, [data-markdown] h4 {
+  font-size: 1.05em; margin-top: 0.4em;
+}
+[data-markdown] ul, [data-markdown] ol { padding-left: 1.4em; }
+[data-markdown] li + li { margin-top: 0.2em; }
+[data-markdown] code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em; background: #262b31; padding: 1px 5px; border-radius: 4px;
+}
+[data-markdown] pre {
+  background: #0b0d0f; border: 1px solid var(--fw-border); border-radius: 8px;
+  padding: 10px 12px; overflow-x: auto;
+}
+[data-markdown] pre code { background: none; padding: 0; font-size: 0.85em; }
+[data-markdown] blockquote {
+  border-left: 3px solid #3a4a5a; padding-left: 10px; color: var(--fw-text-dim);
+}
+[data-markdown] a { color: #7ab3e0; }
+[data-markdown] table { border-collapse: collapse; }
+[data-markdown] th, [data-markdown] td {
+  border: 1px solid var(--fw-border); padding: 4px 10px; font-size: 13px;
+}
+[data-markdown] hr { border: none; border-top: 1px solid var(--fw-border); }

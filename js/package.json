@@ -1,0 +1,38 @@
+{
+  "name": "@fairway/client",
+  "version": "0.1.0",
+  "description": "TypeScript client for the Agent Chat Protocol: SSE stream with seq resume, normative fold, React useAgentChat hook",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./react": "./dist/react/index.js",
+    "./react/markdown": "./dist/react/markdown.js",
+    "./react/styles.css": "./src/react/styles.css"
+  },
+  "files": ["dist", "src/react/styles.css"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-markdown": ">=9",
+    "remark-gfm": ">=4"
+  },
+  "peerDependenciesMeta": {
+    "react": { "optional": true },
+    "react-markdown": { "optional": true },
+    "remark-gfm": { "optional": true }
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "react": "^18.3.1",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
