@@ -20,7 +20,7 @@ import time
 
 from . import events as E
 from .fold import compactable_delta_seqs, final_text, fold_all
-from .runner import Runner, TurnContext, TurnResult
+from .runner import Runner, TurnContext
 from .store import Store
 
 log = logging.getLogger("fairway.jobs")

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .events import CORE_TYPES, TERMINAL_TYPES
+from .events import TERMINAL_TYPES
 
 Item = dict[str, Any]
 

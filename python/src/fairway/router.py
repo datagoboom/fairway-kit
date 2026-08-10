@@ -13,12 +13,12 @@ from fastapi import APIRouter, FastAPI, HTTPException, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
-MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
-
 from .events import PROTOCOL_VERSION
 from .jobs import JobRegistry
 from .runner import Runner, TurnContext
 from .store import Store
+
+MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
 
 SSE_HEADERS = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
 
@@ -78,8 +78,12 @@ def build_router(
             raise HTTPException(400, "attachments are not enabled on this server")
         if not await store.get_session(session_id):
             raise HTTPException(404, "session not found")
+        # Reject on the declared size before buffering the body, so an
+        # oversized upload can't force a large read/spool first.
+        if file.size is not None and file.size > MAX_ATTACHMENT_BYTES:
+            raise HTTPException(413, "attachment too large")
         data = await file.read()
-        if len(data) > MAX_ATTACHMENT_BYTES:
+        if len(data) > MAX_ATTACHMENT_BYTES:  # backstop when size is unknown
             raise HTTPException(413, "attachment too large")
         name = re.sub(r"[^\w.\- ]", "_", file.filename or "file")[:120] or "file"
         suffix = Path(name).suffix[:16]
@@ -102,7 +106,15 @@ def build_router(
         full = attachments_dir / att["path"]
         if not full.is_file():
             raise HTTPException(404, "attachment file missing")
-        return FileResponse(full, media_type=att["media_type"], filename=att["name"])
+        # filename= makes Starlette send Content-Disposition: attachment (forces
+        # download, so uploaded HTML/SVG can't render inline); nosniff stops the
+        # browser second-guessing the client-supplied media type.
+        return FileResponse(
+            full,
+            media_type=att["media_type"],
+            filename=att["name"],
+            headers={"X-Content-Type-Options": "nosniff"},
+        )
 
     @r.post("/sessions/{session_id}/send", status_code=202)
     async def send(session_id: str, body: SendBody) -> dict[str, Any]:

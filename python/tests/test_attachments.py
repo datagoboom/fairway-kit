@@ -89,6 +89,33 @@ async def test_upload_send_serve_roundtrip(app_client, tmp_path):
     assert served.headers["content-type"].startswith("image/png")
 
 
+async def test_upload_rejects_oversized(app_client):
+    from fairway.router import MAX_ATTACHMENT_BYTES
+
+    client, _, _ = app_client
+    session = (await client.post("/api/chat/sessions", json={})).json()["session"]
+    big = io.BytesIO(b"\0" * (MAX_ATTACHMENT_BYTES + 1))
+    r = await client.post(
+        f"/api/chat/sessions/{session['id']}/attachments",
+        files={"file": ("big.bin", big, "application/octet-stream")},
+    )
+    assert r.status_code == 413
+
+
+async def test_serve_forces_download_and_nosniff(app_client):
+    client, _, _ = app_client
+    session = (await client.post("/api/chat/sessions", json={})).json()["session"]
+    # An HTML upload must never be served as renderable text/html.
+    up = await client.post(
+        f"/api/chat/sessions/{session['id']}/attachments",
+        files={"file": ("x.html", io.BytesIO(b"<script>alert(1)</script>"), "text/html")},
+    )
+    served = await client.get(f"/api/chat/attachments/{up.json()['id']}")
+    assert served.status_code == 200
+    assert "attachment" in served.headers.get("content-disposition", "")
+    assert served.headers.get("x-content-type-options") == "nosniff"
+
+
 async def test_send_rejects_foreign_or_unknown_attachment(app_client):
     client, _, _ = app_client
     s1 = (await client.post("/api/chat/sessions", json={})).json()["session"]

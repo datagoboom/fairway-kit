@@ -100,7 +100,8 @@ class Store:
 
     @property
     def db(self) -> aiosqlite.Connection:
-        assert self._db is not None, "Store.open() not called"
+        if self._db is None:  # not an assert: must hold under python -O
+            raise RuntimeError("Store.open() must be called before use")
         return self._db
 
     # -- sessions ------------------------------------------------------------
@@ -345,9 +346,13 @@ class Store:
             )
             job_ids = [row["id"] for row in await cur.fetchall()]
             if job_ids:
+                # Only the placeholder COUNT is interpolated; every value is a
+                # bound parameter (standard variable-length IN clause), so this
+                # is not a SQL-injection vector despite the f-string.
                 marks = ",".join("?" * len(job_ids))
-                await self.db.execute(
-                    f"DELETE FROM job_events WHERE job_id IN ({marks})", job_ids
+                await self.db.execute(  # nosemgrep: sqlalchemy-execute-raw-query
+                    f"DELETE FROM job_events WHERE job_id IN ({marks})",  # nosec B608  # noqa: S608
+                    job_ids,
                 )
                 await self.db.commit()
         return len(job_ids)
@@ -356,9 +361,10 @@ class Store:
         if not seqs:
             return
         async with self._write_lock:
+            # Only the placeholder COUNT is interpolated; values are bound.
             marks = ",".join("?" * len(seqs))
-            await self.db.execute(
-                f"DELETE FROM job_events WHERE job_id = ? AND seq IN ({marks})",
+            await self.db.execute(  # nosemgrep: sqlalchemy-execute-raw-query
+                f"DELETE FROM job_events WHERE job_id = ? AND seq IN ({marks})",  # nosec B608  # noqa: S608
                 [job_id, *seqs],
             )
             await self.db.commit()
