@@ -1,13 +1,14 @@
-# fairway-kit
+# @fairway-kit/client
 
-The TypeScript half of [fairway](https://github.com/datagoboom/fairway-kit), a
+The frontend half of [fairway](https://github.com/datagoboom/fairway-kit), a
 dev kit for building local, agent-backed applications with durable, resumable
-chat.
+chat. Depends on [`@fairway-kit/protocol`](https://www.npmjs.com/package/@fairway-kit/protocol)
+for the shared event types and fold.
 
 ```tsx
-import { AgentChatClient } from "fairway-kit";
-import { ChatProvider, ChatPanel, ChatInput } from "fairway-kit/react";
-import "fairway-kit/react/styles.css"; // optional default look
+import { AgentChatClient } from "@fairway-kit/client";
+import { ChatProvider, ChatPanel, ChatInput } from "@fairway-kit/client/react";
+import "@fairway-kit/client/react/styles.css"; // optional default look
 
 const client = new AgentChatClient("/api/chat");
 

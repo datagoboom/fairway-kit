@@ -1,6 +1,6 @@
 {
   "name": "@fairway-kit/client",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Dev kit frontend for local agent-backed apps: resumable SSE streaming, event fold, headless React chat components",
   "license": "MIT",
   "author": "Andrew Long",
@@ -37,7 +37,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@fairway-kit/protocol": "0.4.0"
+    "@fairway-kit/protocol": "0.4.1"
   },
   "peerDependencies": {
     "react": ">=18",

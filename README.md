@@ -61,8 +61,12 @@ The guarantees:
 
 | Package | What it is |
 |---|---|
-| `fairway-kit` on PyPI (`import fairway`) | FastAPI router factory, SQLite-backed event log and job registry, runner interface, Claude Agent SDK adapter |
-| `fairway-kit` on npm | SSE stream client with seq resume, the fold, typed REST client, React hook and headless components |
+| `fairway-kit` on PyPI (`import fairway`) | FastAPI router factory, event log and job registry (SQLite, Postgres, or MySQL), runner interface, Claude Agent SDK adapter |
+| `@fairway-kit/client` on npm | SSE stream client with seq resume, typed REST client, React hook and headless components |
+| `@fairway-kit/protocol` on npm | The wire protocol: event types and the normative fold, shared by clients and servers (a dependency of the client) |
+
+> The npm frontend was previously the unscoped `fairway-kit`; it is now
+> `@fairway-kit/client`. The old package is deprecated.
 
 ## Backend quickstart
 
@@ -162,9 +166,9 @@ For custom runners the same gate is one call:
 ## Frontend quickstart
 
 ```tsx
-import { AgentChatClient } from "fairway-kit";
-import { ChatProvider, ChatPanel, ChatInput } from "fairway-kit/react";
-import "fairway-kit/react/styles.css";   // optional default look
+import { AgentChatClient } from "@fairway-kit/client";
+import { ChatProvider, ChatPanel, ChatInput } from "@fairway-kit/client/react";
+import "@fairway-kit/client/react/styles.css";   // optional default look
 
 const client = new AgentChatClient("/api/chat");
 

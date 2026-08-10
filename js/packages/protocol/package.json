@@ -1,6 +1,6 @@
 {
   "name": "@fairway-kit/protocol",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Agent Chat Protocol: event types and the normative fold, shared by fairway-kit clients and servers",
   "license": "MIT",
   "author": "Andrew Long",
