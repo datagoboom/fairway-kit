@@ -1,6 +1,6 @@
 [project]
 name = "fairway-kit"
-version = "0.1.0"
+version = "0.1.1"
 description = "Dev kit backend for local agent-backed apps: durable, resumable agent chat over FastAPI + SQLite"
 license = "MIT"
 readme = "README.md"
@@ -27,7 +27,6 @@ claude = ["claude-agent-sdk>=0.2"]
 [project.urls]
 Homepage = "https://github.com/datagoboom/fairway-kit"
 Repository = "https://github.com/datagoboom/fairway-kit"
-Protocol = "https://github.com/datagoboom/fairway-kit/blob/main/PROTOCOL.md"
 
 [dependency-groups]
 dev = [

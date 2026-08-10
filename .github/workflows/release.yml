@@ -2,7 +2,7 @@ name: release
 
 # Publishes both packages when a v* tag is pushed. No stored secrets:
 # PyPI uses OIDC trusted publishing; npm uses OIDC trusted publishing after
-# the first (manual) publish. See RELEASING.md for the one-time setup.
+# the first (manual) publish. See docs/RELEASING.md (local) for the one-time setup.
 
 on:
   push:

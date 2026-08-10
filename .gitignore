@@ -9,3 +9,6 @@ dist/
 *.db-wal
 *.db-shm
 .DS_Store
+
+# internal docs (kept local for now)
+/docs/
