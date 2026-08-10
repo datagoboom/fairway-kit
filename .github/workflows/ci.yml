@@ -49,9 +49,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm, cache-dependency-path: js/package-lock.json }
-      - run: npm ci                   # installs both workspace packages
-      - run: npm run build            # protocol then client; publishable artifacts must build
-      - run: npm test                 # both packages; includes the shared fold conformance vectors
+      - run: npm ci                   # installs all workspace packages (builds better-sqlite3)
+      - run: npm run build            # protocol, client, server; publishable artifacts must build
+      - run: npm test                 # all packages; includes the shared fold conformance vectors
       - run: npm run typecheck
 
   example:

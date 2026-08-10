@@ -2,12 +2,12 @@
   "name": "fairway-kit-js",
   "private": true,
   "version": "0.4.2",
-  "description": "fairway-kit JS monorepo: @fairway-kit/protocol and @fairway-kit/client",
+  "description": "fairway-kit JS monorepo: @fairway-kit/protocol, @fairway-kit/client, and @fairway-kit/server",
   "type": "module",
   "workspaces": ["packages/*"],
   "scripts": {
-    "build": "npm run build -w @fairway-kit/protocol && npm run build -w @fairway-kit/client",
-    "test": "npm run test -w @fairway-kit/protocol && npm run test -w @fairway-kit/client",
-    "typecheck": "npm run build -w @fairway-kit/protocol && npm run typecheck -w @fairway-kit/protocol && npm run typecheck -w @fairway-kit/client"
+    "build": "npm run build -w @fairway-kit/protocol && npm run build -w @fairway-kit/client && npm run build -w @fairway-kit/server",
+    "test": "npm run test -w @fairway-kit/protocol && npm run test -w @fairway-kit/client && npm run test -w @fairway-kit/server",
+    "typecheck": "npm run build -w @fairway-kit/protocol && npm run typecheck -w @fairway-kit/protocol && npm run typecheck -w @fairway-kit/client && npm run typecheck -w @fairway-kit/server"
   }
 }

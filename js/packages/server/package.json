@@ -1,0 +1,39 @@
+{
+  "name": "@fairway-kit/server",
+  "version": "0.1.0",
+  "description": "Dev kit backend for local agent-backed apps: durable, resumable agent chat over Node (SQLite), implementing the Agent Chat Protocol",
+  "license": "MIT",
+  "author": "Andrew Long",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/datagoboom/fairway-kit.git",
+    "directory": "js/packages/server"
+  },
+  "homepage": "https://github.com/datagoboom/fairway-kit",
+  "keywords": ["agent", "chat", "sse", "streaming", "node", "server", "local-first"],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@fairway-kit/protocol": "0.4.2",
+    "better-sqlite3": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
