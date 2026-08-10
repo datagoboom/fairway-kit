@@ -1,7 +1,7 @@
 [project]
 name = "fairway-kit"
-version = "0.2.1"
-description = "Dev kit backend for local agent-backed apps: durable, resumable agent chat over FastAPI + SQLite"
+version = "0.3.0"
+description = "Dev kit backend for local agent-backed apps: durable, resumable agent chat over FastAPI (SQLite, Postgres, or MySQL)"
 license = "MIT"
 readme = "README.md"
 authors = [{ name = "Andrew Long" }]
