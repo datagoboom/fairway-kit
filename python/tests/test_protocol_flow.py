@@ -81,7 +81,7 @@ async def test_replay_folds_identically_to_live(client):
         await client.post(f"/api/chat/sessions/{session['id']}/send", json={"content": "x"})
     ).json()
     live = await _read_sse(client, body["job_id"])
-    replay = await _read_sse(client, body["job_id"])  # job now terminal → compacted DB replay
+    replay = await _read_sse(client, body["job_id"])  # job now terminal, compacted DB replay
     assert fold_all(live) == fold_all(replay)
     # Compaction only ever removes superseded text deltas.
     live_seqs = {e["seq"] for e in live}

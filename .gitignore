@@ -13,3 +13,4 @@ dist/
 # internal docs (kept local for now)
 /docs/
 examples/chat/fairway-example-settings.json
+examples/chat/fairway-example-attachments/
