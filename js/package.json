@@ -1,7 +1,7 @@
 {
   "name": "@fairway/client",
   "version": "0.1.0",
-  "description": "TypeScript client for the Agent Chat Protocol: SSE stream with seq resume, normative fold, React useAgentChat hook",
+  "description": "Dev kit frontend for local agent-backed apps: resumable SSE streaming, event fold, headless React chat components",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",

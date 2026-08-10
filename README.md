@@ -1,9 +1,16 @@
 # fairway
 
-**Durable, resumable chat for AI agents.** Two small libraries — a Python backend
-and a TypeScript frontend — connected by a written wire protocol, for building
-apps where an agent streams text and tool calls to a live chat UI without the
-usual failure modes.
+**A dev kit for building local, agent-backed applications.** Two small
+libraries — a Python backend and a TypeScript frontend — connected by a written
+wire protocol, so the app you're building on your own machine can have an agent
+streaming text and tool calls into a live chat UI without the usual failure
+modes.
+
+fairway is for the tools you run yourself: personal dashboards, homelab
+utilities, internal single-team apps, agent experiments — anywhere the "users"
+are you and the people you sit near. It is deliberately **not** a foundation
+for production chatbots or multi-tenant SaaS, and it never phones home: your
+events, sessions, and transcripts live in a SQLite file next to your app.
 
 If you've built an agent chat app, you've probably hit these:
 
@@ -147,16 +154,19 @@ failure modes this project exists for: refresh mid-response and watch the UI
 reattach to the live stream; kill the backend mid-turn and watch reconnecting
 clients unlock.
 
-## Status
+## Status & scope
 
 Early (`0.x`, protocol `0.1`) — APIs may still move. Implemented and tested:
 the full protocol surface, Claude Agent SDK adapter (API-key and subscription
-auth), React components. On the roadmap: file/image attachments, human-in-the-loop
-tool approval, event-log retention, multi-user auth, additional backend
+auth), React components. On the roadmap: file/image attachments,
+human-in-the-loop tool approval, event-log retention, additional backend
 implementations.
 
-Single-process + SQLite by design for now: the target is the enormous class of
-apps that are one process serving one team, not horizontal-scale chat SaaS.
+**Scope, stated plainly:** single process, single user, SQLite, no auth — by
+design, permanently in spirit. The durability machinery exists so *your local
+app* survives refreshes, restarts, and long agent turns, not so you can put it
+on the public internet. If you need multi-tenant chat infrastructure, you want
+a different tool.
 
 ## License
 

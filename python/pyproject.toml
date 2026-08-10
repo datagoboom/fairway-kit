@@ -1,7 +1,7 @@
 [project]
 name = "fairway"
 version = "0.1.0"
-description = "Backend library for the Agent Chat Protocol: durable streaming agent chat over FastAPI + SQLite"
+description = "Dev kit backend for local agent-backed apps: durable, resumable agent chat over FastAPI + SQLite"
 license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
