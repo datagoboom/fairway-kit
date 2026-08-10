@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       publish_js: ${{ steps.check.outputs.publish_js }}
+      publish_server: ${{ steps.check.outputs.publish_server }}
       publish_py: ${{ steps.check.outputs.publish_py }}
     steps:
       - uses: actions/checkout@v4
@@ -25,8 +26,11 @@ jobs:
           PY=$(grep -m1 '^version = ' python/pyproject.toml | cut -d'"' -f2)
           PROTO=$(node -p "require('./js/packages/protocol/package.json').version")
           CLIENT=$(node -p "require('./js/packages/client/package.json').version")
-          echo "tag=$TAG python=$PY protocol=$PROTO client=$CLIENT"
-          # The two JS packages release together and must share the tag version.
+          SERVER=$(node -p "require('./js/packages/server/package.json').version")
+          echo "tag=$TAG python=$PY protocol=$PROTO client=$CLIENT server=$SERVER"
+          # protocol + client release together and must share the tag version
+          # (client depends on protocol at an exact version). The server versions
+          # independently, so it releases on its own matching tag.
           if [ "$PROTO" = "$TAG" ] && [ "$CLIENT" = "$TAG" ]; then
             echo "publish_js=true" >> "$GITHUB_OUTPUT"
           elif [ "$PROTO" = "$TAG" ] || [ "$CLIENT" = "$TAG" ]; then
@@ -34,6 +38,7 @@ jobs:
           else
             echo "publish_js=false" >> "$GITHUB_OUTPUT"
           fi
+          echo "publish_server=$([ "$SERVER" = "$TAG" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           echo "publish_py=$([ "$PY" = "$TAG" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
   test-backend:
@@ -81,7 +86,7 @@ jobs:
 
   publish-npm:
     needs: [versions, test-backend, test-frontend]
-    if: needs.versions.outputs.publish_js == 'true'
+    if: needs.versions.outputs.publish_js == 'true' || needs.versions.outputs.publish_server == 'true'
     runs-on: ubuntu-latest
     environment: npm
     permissions:
@@ -98,6 +103,10 @@ jobs:
       - run: npm install -g npm@latest   # trusted publishing needs npm >= 11.5.1
       - run: npm ci
       - run: npm run build
-      # protocol first — client declares it as a dependency.
+      # protocol first — client and server both declare it as a dependency.
       - run: npm publish -w @fairway-kit/protocol
+        if: needs.versions.outputs.publish_js == 'true'
       - run: npm publish -w @fairway-kit/client
+        if: needs.versions.outputs.publish_js == 'true'
+      - run: npm publish -w @fairway-kit/server
+        if: needs.versions.outputs.publish_server == 'true'
