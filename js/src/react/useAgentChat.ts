@@ -8,7 +8,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AgentChatClient, ConflictError, type Message } from "../client.js";
+import { AgentChatClient, ConflictError, type Attachment, type Message } from "../client.js";
 import { fold, type StreamItem } from "../fold.js";
 import { streamJob } from "../stream.js";
 import { isTerminal, type ChatEvent, type PermissionDecision } from "../events.js";
@@ -130,7 +130,7 @@ export function useAgentChat(
   }, [client, sessionId, attach]);
 
   const send = useCallback(
-    async (content: string) => {
+    async (content: string, attachments?: Attachment[]) => {
       if (!sessionId) throw new Error("no session selected");
       // Optimistic user message; replaced by the persisted row on terminal handoff.
       const optimistic: Message = {
@@ -140,11 +140,12 @@ export function useAgentChat(
         content,
         events: null,
         streaming: false,
+        attachments: attachments ?? null,
         created_at: new Date().toISOString(),
       };
       setMessages((cur) => [...cur, optimistic]);
       try {
-        const res = await client.send(sessionId, content);
+        const res = await client.send(sessionId, content, attachments);
         attach(res.job_id);
         return res;
       } catch (err) {
@@ -173,5 +174,16 @@ export function useAgentChat(
     [client, activeJobId]
   );
 
-  return { messages, liveItems, streaming, connection, activeJobId, send, stop, respondPermission };
+  return {
+    client,
+    sessionId,
+    messages,
+    liveItems,
+    streaming,
+    connection,
+    activeJobId,
+    send,
+    stop,
+    respondPermission,
+  };
 }

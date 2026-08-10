@@ -16,8 +16,10 @@ import logging
 import uuid
 from typing import Any, AsyncIterator, Awaitable, Callable
 
+import time
+
 from . import events as E
-from .fold import final_text, fold_all
+from .fold import compactable_delta_seqs, final_text, fold_all
 from .runner import Runner, TurnContext, TurnResult
 from .store import Store
 
@@ -39,10 +41,17 @@ class _LiveJob:
 
 
 class JobRegistry:
-    def __init__(self, store: Store, *, stop_grace: float = STOP_GRACE_SECONDS):
+    def __init__(
+        self,
+        store: Store,
+        *,
+        stop_grace: float = STOP_GRACE_SECONDS,
+        flush_interval: float = 0.0,
+    ):
         self._store = store
         self._live: dict[str, _LiveJob] = {}
         self._stop_grace = stop_grace
+        self._flush_interval = flush_interval
 
     # -- lifecycle -----------------------------------------------------------
 
@@ -81,17 +90,24 @@ class JobRegistry:
         job_id = ctx.job_id
         emitted: list[dict[str, Any]] = []
 
+        last_flush = 0.0
+
         async def emit(ev: dict[str, Any]) -> dict[str, Any]:
+            nonlocal last_flush
             E.validate(ev)
             if E.is_terminal(ev):
                 raise ValueError("runners must not emit terminal events; return TurnResult")
             stamped = await self._store.append_event(job_id, ev)  # durable first
             emitted.append(stamped)
-            # Crash-safety flush (PROTOCOL.md 7). Per-event is fine for SQLite/WAL
-            # single-user; TODO: make interval-based for higher write rates.
-            await self._store.flush_assistant(
-                ctx.assistant_message_id, final_text(emitted), emitted
-            )
+            # Crash-safety flush (PROTOCOL.md 7): per-event by default,
+            # rate-limited by flush_interval under load. The event log above is
+            # already durable either way; this only affects mid-turn message rows.
+            now = time.monotonic()
+            if self._flush_interval <= 0 or now - last_flush >= self._flush_interval:
+                last_flush = now
+                await self._store.flush_assistant(
+                    ctx.assistant_message_id, final_text(emitted), emitted
+                )
             self._fan_out(live, stamped)
             return stamped
 
@@ -162,6 +178,15 @@ class JobRegistry:
         # Ordering per PROTOCOL.md 7: finalize row (5) -> job status (6) -> terminal event (7).
         await self._store.finalize_assistant(ctx.assistant_message_id, content, emitted)
         await self._store.set_job_status(ctx.job_id, status)
+        # Compaction (PROTOCOL.md 6): drop text deltas a text_block supersedes.
+        # Fold-idempotent by construction. Runs BEFORE the terminal event is
+        # appended so every replay that sees the terminal sees the same log;
+        # live subscribers already received the deltas. Safe to fail silently —
+        # the finalized events_json above is the durable copy.
+        with contextlib.suppress(Exception):
+            await self._store.delete_events_by_seq(
+                ctx.job_id, compactable_delta_seqs(emitted)
+            )
         stamped = await self._store.append_event(ctx.job_id, terminal_ev)
         self._fan_out(live, stamped)
 

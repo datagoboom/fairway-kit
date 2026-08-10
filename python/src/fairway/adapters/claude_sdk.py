@@ -190,6 +190,12 @@ class ClaudeSDKRunner:
         )
 
         prompt = self._build_prompt(ctx)
+        images = [
+            a for a in ctx.attachments
+            if a.get("path") and str(a.get("media_type", "")).startswith("image/")
+        ]
+        if images:
+            prompt = _content_block_prompt(prompt, images)
         factory = self.client_factory or ClaudeSDKClient
         coalescer = _Coalescer(emit, self.flush_interval_s, self.flush_min_chars)
         text_parts: list[str] = []
@@ -245,15 +251,30 @@ class ClaudeSDKRunner:
         compact history block ONLY when there is no resume token — doing both
         double-feeds the conversation and bloats the prompt."""
         if ctx.provider_session_id or not ctx.messages:
-            return ctx.user_content
+            return self._append_file_notes(ctx.user_content, ctx)
         recent = ctx.messages[-HISTORY_FALLBACK_TURNS:]
         lines = [f"{m['role'].capitalize()}: {m['content']}" for m in recent if m.get("content")]
-        return (
+        base = (
             "<conversation_history>\n"
             + "\n".join(lines)
             + "\n</conversation_history>\n\n"
             + ctx.user_content
         )
+        return self._append_file_notes(base, ctx)
+
+    def _append_file_notes(self, prompt: str, ctx: TurnContext) -> str:
+        """Non-image attachments become path notes the agent can Read."""
+        files = [
+            a for a in ctx.attachments
+            if a.get("path") and not str(a.get("media_type", "")).startswith("image/")
+        ]
+        if not files:
+            return prompt
+        notes = "\n".join(
+            f"- {a.get('name', 'file')} ({a.get('media_type', '?')}): {a['path']}"
+            for a in files
+        )
+        return f"{prompt}\n\n<attached_files>\n{notes}\n</attached_files>"
 
     def _tool_call_event(self, block: Any) -> dict[str, Any]:
         name = _strip_mcp_prefix(block.name)
@@ -315,6 +336,45 @@ class _Coalescer:
             self._buf = []
         else:
             await self.flush()
+
+
+# Images above this size are dropped with a note: the CLI's JSON message buffer
+# rejects oversized payloads, and base64 inflates by ~4/3.
+MAX_IMAGE_BYTES = 3 * 1024 * 1024
+
+
+def _content_block_prompt(text_prompt: str, images: list[dict[str, Any]]):
+    """Wrap the prompt as the SDK's streaming-input shape so image content
+    blocks can ride along with the text."""
+    import base64
+    from pathlib import Path
+
+    async def gen():
+        blocks: list[dict[str, Any]] = []
+        for att in images:
+            path = Path(att["path"])
+            if not path.is_file():
+                blocks.append({"type": "text", "text": f"[Attached image missing: {att.get('name')}]"})
+                continue
+            data = path.read_bytes()
+            if len(data) > MAX_IMAGE_BYTES:
+                blocks.append({
+                    "type": "text",
+                    "text": f"[Attached image too large to inline: {att.get('name')} at {att['path']}]",
+                })
+                continue
+            blocks.append({
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": att.get("media_type", "image/png"),
+                    "data": base64.standard_b64encode(data).decode(),
+                },
+            })
+        blocks.append({"type": "text", "text": text_prompt})
+        yield {"type": "user", "message": {"role": "user", "content": blocks}}
+
+    return gen()
 
 
 def _strip_mcp_prefix(name: str) -> str:

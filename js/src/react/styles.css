@@ -108,6 +108,70 @@
   color: var(--fw-error);
 }
 
+/* attachments on messages */
+[data-fairway-attachments] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+[data-fairway-attachment-image] {
+  max-width: 220px;
+  max-height: 160px;
+  border-radius: 8px;
+  border: 1px solid var(--fw-border);
+  display: block;
+}
+[data-fairway-attachment-file] {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--fw-border);
+  background: #14181c;
+  color: #7ab3e0;
+  font-size: 12px;
+  text-decoration: none;
+}
+
+/* composer pending attachments */
+[data-fairway-pending-attachments] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px 0;
+}
+[data-fairway-pending-attachment] {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--fw-border);
+  background: #14181c;
+  font-size: 12px;
+}
+[data-fairway-remove-attachment] {
+  border: none;
+  background: none;
+  color: var(--fw-text-dim);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0;
+}
+[data-fairway-attach] {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--fw-border);
+  background: var(--fw-accent);
+  color: inherit;
+  cursor: pointer;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+[data-fairway-input-row] {
+  gap: 8px;
+  padding: 12px;
+}
+
 /* inline permission approval card */
 [data-fairway-item="permission"] {
   display: flex;
@@ -172,8 +236,6 @@
 }
 
 [data-fairway-input] {
-  gap: 8px;
-  padding: 12px;
   border-top: 1px solid var(--fw-border);
 }
 [data-fairway-input-field] {

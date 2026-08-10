@@ -71,14 +71,25 @@ async def test_full_turn(client):
     assert tail[-1]["type"] == "done"
 
 
-async def test_replay_equals_live(client):
+async def test_replay_folds_identically_to_live(client):
+    """Raw logs may differ after compaction (deltas dropped), but fold output —
+    what the user sees — must be identical (PROTOCOL.md 5/6)."""
+    from fairway.fold import fold_all
+
     session = (await client.post("/api/chat/sessions", json={})).json()["session"]
     body = (
         await client.post(f"/api/chat/sessions/{session['id']}/send", json={"content": "x"})
     ).json()
     live = await _read_sse(client, body["job_id"])
-    replay = await _read_sse(client, body["job_id"])  # job now terminal → pure DB replay
-    assert live == replay
+    replay = await _read_sse(client, body["job_id"])  # job now terminal → compacted DB replay
+    assert fold_all(live) == fold_all(replay)
+    # Compaction only ever removes superseded text deltas.
+    live_seqs = {e["seq"] for e in live}
+    replay_seqs = {e["seq"] for e in replay}
+    assert replay_seqs <= live_seqs
+    assert all(e["type"] == "text" for e in live if e["seq"] in live_seqs - replay_seqs)
+    # Two post-terminal replays are byte-identical.
+    assert replay == await _read_sse(client, body["job_id"])
 
 
 async def test_conflict_on_concurrent_send(client, monkeypatch):

@@ -131,6 +131,39 @@ def final_text(events: list[dict[str, Any]]) -> str:
     )
 
 
+def compactable_delta_seqs(events: list[dict[str, Any]]) -> list[int]:
+    """Seqs of text deltas that a text_block fully supersedes (PROTOCOL.md 6).
+
+    Deleting exactly these events cannot change fold output: only runs that end
+    with an authoritative text_block are eligible. A run cut short by a tool
+    call or terminal (its content exists solely in deltas) is kept, and
+    thinking deltas are always kept (no authoritative block exists for them).
+    """
+    compactable: list[int] = []
+    current_run: list[int] = []
+    pending_permissions: set[str] = set()
+    for ev in events:
+        t = ev.get("type")
+        if t == "text":
+            current_run.append(ev["seq"])
+        elif t == "text_block":
+            compactable.extend(current_run)
+            current_run = []
+        elif t == "message_start":
+            continue
+        elif t == "permission_resolved" and ev.get("id") in pending_permissions:
+            # Matched resolution mutates an earlier item in place; the trailing
+            # text run survives. (An orphan resolution appends an item and
+            # breaks the run, so it falls through to the else below.)
+            pending_permissions.discard(ev["id"])
+            continue
+        else:
+            if t == "permission_request":
+                pending_permissions.add(ev["id"])
+            current_run = []  # run closed without a block: deltas are the record
+    return compactable
+
+
 def _close_trailing(items: list[Item]) -> None:
     if items and items[-1].get("type") in ("text", "thinking") and items[-1].get("open"):
         items[-1]["open"] = False

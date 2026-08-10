@@ -1,6 +1,6 @@
 /** Agent Chat Protocol event types (PROTOCOL.md sections 2-3). */
 
-export const PROTOCOL_VERSION = "0.2";
+export const PROTOCOL_VERSION = "0.3";
 
 export interface EventBase {
   /** Per-job monotonic sequence, assigned at persist time. */

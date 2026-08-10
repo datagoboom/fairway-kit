@@ -10,7 +10,7 @@ from __future__ import annotations
 import asyncio
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import aiosqlite
@@ -42,6 +42,15 @@ CREATE TABLE IF NOT EXISTS jobs (
     updated_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_jobs_session ON jobs(session_id, created_at);
+CREATE TABLE IF NOT EXISTS attachments (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    media_type TEXT NOT NULL,
+    size INTEGER NOT NULL,
+    path TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS job_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     job_id TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
@@ -232,6 +241,26 @@ class Store:
         m["streaming"] = bool(m["streaming"])
         return m
 
+    # -- attachments ---------------------------------------------------------
+
+    async def add_attachment(
+        self, session_id: str, name: str, media_type: str, size: int, path: str
+    ) -> dict[str, Any]:
+        aid = _new_id()
+        async with self._write_lock:
+            await self.db.execute(
+                "INSERT INTO attachments (id, session_id, name, media_type, size, path, created_at)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (aid, session_id, name, media_type, size, path, _now()),
+            )
+            await self.db.commit()
+        return {"id": aid, "name": name, "media_type": media_type, "size": size}
+
+    async def get_attachment(self, attachment_id: str) -> dict[str, Any] | None:
+        cur = await self.db.execute("SELECT * FROM attachments WHERE id = ?", (attachment_id,))
+        row = await cur.fetchone()
+        return dict(row) if row else None
+
     # -- jobs ----------------------------------------------------------------
 
     async def create_job(self, session_id: str) -> str:
@@ -297,8 +326,39 @@ class Store:
         return [json.loads(r["event_json"]) for r in await cur.fetchall()]
 
     async def prune_events(self, job_id: str) -> None:
-        """Optional retention (PROTOCOL.md 12): drop the log for a terminal job once
-        events_json is finalized. TODO: call from a retention sweep with a grace window."""
+        """Drop the whole log for one terminal job (its finalized events_json on
+        the message row is the durable replay source, PROTOCOL.md 12)."""
         async with self._write_lock:
             await self.db.execute("DELETE FROM job_events WHERE job_id = ?", (job_id,))
+            await self.db.commit()
+
+    async def prune_terminal_event_logs(self, older_than_days: float) -> int:
+        """Retention sweep: delete event logs of terminal jobs whose last update
+        is older than the grace window. Returns the number of jobs pruned."""
+        cutoff = (
+            datetime.now(timezone.utc) - timedelta(days=older_than_days)
+        ).isoformat()
+        async with self._write_lock:
+            cur = await self.db.execute(
+                "SELECT id FROM jobs WHERE status != 'running' AND updated_at < ?",
+                (cutoff,),
+            )
+            job_ids = [row["id"] for row in await cur.fetchall()]
+            if job_ids:
+                marks = ",".join("?" * len(job_ids))
+                await self.db.execute(
+                    f"DELETE FROM job_events WHERE job_id IN ({marks})", job_ids
+                )
+                await self.db.commit()
+        return len(job_ids)
+
+    async def delete_events_by_seq(self, job_id: str, seqs: list[int]) -> None:
+        if not seqs:
+            return
+        async with self._write_lock:
+            marks = ",".join("?" * len(seqs))
+            await self.db.execute(
+                f"DELETE FROM job_events WHERE job_id = ? AND seq IN ({marks})",
+                [job_id, *seqs],
+            )
             await self.db.commit()

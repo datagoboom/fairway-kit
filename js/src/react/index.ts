@@ -14,6 +14,7 @@ export {
   ChatItem,
   TypingIndicator,
   PermissionPrompt,
+  MessageAttachments,
   type ChatPanelProps,
   type ChatComponents,
   type ItemComponentProps,

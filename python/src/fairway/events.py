@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-PROTOCOL_VERSION = "0.2"
+PROTOCOL_VERSION = "0.3"
 
 CORE_TYPES = frozenset(
     {

@@ -19,6 +19,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import type { Attachment } from "../client.js";
 import type { ChatEvent } from "../events.js";
 import type { ErrorItem, PermissionItem, StreamItem, TextItem, ToolItem } from "../fold.js";
 import { useChatContext, useChatRows, type ChatRow } from "./context.js";
@@ -146,6 +147,9 @@ export const ChatMessage = memo(function ChatMessage({
   return (
     <div data-fairway-message="" data-role={row.role} data-live={row.live || undefined}>
       <div data-fairway-bubble="">
+        {row.message?.attachments && row.message.attachments.length > 0 && (
+          <MessageAttachments attachments={row.message.attachments} />
+        )}
         {row.items.map((item, i) => (
           <ChatItem key={i} item={item} row={row} components={components} />
         ))}
@@ -221,6 +225,33 @@ function DefaultTool({ item }: ItemComponentProps<ToolItem>) {
 
 function DefaultError({ item }: ItemComponentProps<ErrorItem>) {
   return <div data-fairway-item="error">{item.message}</div>;
+}
+
+/** Uploaded attachments on a message: images inline, other files as download
+ * links. Exported for reuse inside custom bubbles. */
+export function MessageAttachments({ attachments }: { attachments: Attachment[] }) {
+  const { client } = useChatContext();
+  return (
+    <div data-fairway-attachments="">
+      {attachments.map((a) =>
+        a.media_type.startsWith("image/") ? (
+          <a key={a.id} href={client.attachmentUrl(a.id)} target="_blank" rel="noreferrer">
+            <img data-fairway-attachment-image="" src={client.attachmentUrl(a.id)} alt={a.name} />
+          </a>
+        ) : (
+          <a
+            key={a.id}
+            data-fairway-attachment-file=""
+            href={client.attachmentUrl(a.id)}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {a.name}
+          </a>
+        )
+      )}
+    </div>
+  );
 }
 
 /** Default inline approval card. Pending: label + Allow / Always allow / Deny

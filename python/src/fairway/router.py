@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 import json
+import re
+import uuid
+from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any, Literal
 
-from fastapi import APIRouter, FastAPI, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, FastAPI, HTTPException, UploadFile
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
+
+MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
 
 from .events import PROTOCOL_VERSION
 from .jobs import JobRegistry
@@ -31,7 +37,12 @@ class PermissionBody(BaseModel):
     decision: Literal["allow", "allow_session", "deny"]
 
 
-def build_router(store: Store, registry: JobRegistry, runner: Runner) -> APIRouter:
+def build_router(
+    store: Store,
+    registry: JobRegistry,
+    runner: Runner,
+    attachments_dir: Path | None = None,
+) -> APIRouter:
     r = APIRouter()
 
     @r.get("/meta")
@@ -61,6 +72,38 @@ def build_router(store: Store, registry: JobRegistry, runner: Runner) -> APIRout
         job = await store.active_job_for_session(session_id)
         return {"job_id": job["id"], "status": job["status"]} if job else {"job_id": None}
 
+    @r.post("/sessions/{session_id}/attachments", status_code=201)
+    async def upload_attachment(session_id: str, file: UploadFile) -> dict[str, Any]:
+        if attachments_dir is None:
+            raise HTTPException(400, "attachments are not enabled on this server")
+        if not await store.get_session(session_id):
+            raise HTTPException(404, "session not found")
+        data = await file.read()
+        if len(data) > MAX_ATTACHMENT_BYTES:
+            raise HTTPException(413, "attachment too large")
+        name = re.sub(r"[^\w.\- ]", "_", file.filename or "file")[:120] or "file"
+        suffix = Path(name).suffix[:16]
+        blob_name = f"{uuid.uuid4().hex}{suffix}"
+        attachments_dir.mkdir(parents=True, exist_ok=True)
+        (attachments_dir / blob_name).write_bytes(data)
+        return await store.add_attachment(
+            session_id,
+            name=name,
+            media_type=file.content_type or "application/octet-stream",
+            size=len(data),
+            path=blob_name,
+        )
+
+    @r.get("/attachments/{attachment_id}")
+    async def get_attachment(attachment_id: str) -> FileResponse:
+        att = await store.get_attachment(attachment_id)
+        if not att or attachments_dir is None:
+            raise HTTPException(404, "attachment not found")
+        full = attachments_dir / att["path"]
+        if not full.is_file():
+            raise HTTPException(404, "attachment file missing")
+        return FileResponse(full, media_type=att["media_type"], filename=att["name"])
+
     @r.post("/sessions/{session_id}/send", status_code=202)
     async def send(session_id: str, body: SendBody) -> dict[str, Any]:
         session = await store.get_session(session_id)
@@ -70,11 +113,28 @@ def build_router(store: Store, registry: JobRegistry, runner: Runner) -> APIRout
         if active:
             raise HTTPException(409, detail={"active_job_id": active["id"]})
 
+        # Resolve attachment references (uploaded earlier) into full records;
+        # runners get absolute paths, persisted messages keep the public shape.
+        resolved: list[dict[str, Any]] = []
+        for ref in body.attachments or []:
+            att = await store.get_attachment(str(ref.get("id", "")))
+            if not att or att["session_id"] != session_id:
+                raise HTTPException(400, f"unknown attachment: {ref.get('id')}")
+            resolved.append(att)
+        public_refs = [
+            {"id": a["id"], "name": a["name"], "media_type": a["media_type"], "size": a["size"]}
+            for a in resolved
+        ]
+        runner_attachments = [
+            {**pub, "path": str((attachments_dir / a["path"]).resolve())}
+            for pub, a in zip(public_refs, resolved)
+        ] if attachments_dir is not None else []
+
         # PROTOCOL.md 7 send ordering: history snapshot, user row, streaming
         # assistant row, job row — all durable before we respond or start the runner.
         history = await store.list_messages(session_id)
         user_message_id = await store.add_message(
-            session_id, "user", body.content, attachments=body.attachments
+            session_id, "user", body.content, attachments=public_refs or None
         )
         assistant_message_id = await store.add_message(session_id, "assistant", streaming=True)
         job_id = await store.create_job(session_id)
@@ -86,7 +146,7 @@ def build_router(store: Store, registry: JobRegistry, runner: Runner) -> APIRout
             user_message_id=user_message_id,
             assistant_message_id=assistant_message_id,
             job_id=job_id,
-            attachments=body.attachments or [],
+            attachments=runner_attachments,
             provider_session_id=session.get("provider_session_id"),
         )
         registry.start(ctx, runner)
@@ -141,23 +201,47 @@ def mount_agent_chat(
     db_path: str,
     runner: Runner,
     prefix: str = "/api/chat",
+    retention_days: float | None = 7.0,
+    flush_interval: float = 0.0,
+    attachments_dir: str | Path | None = None,
 ) -> tuple[Store, JobRegistry]:
     """One-call integration: opens the store, runs the startup sweep, mounts routes.
+
+    retention_days: on startup, drop event logs of terminal jobs older than
+    this (their finalized events_json on the message is the durable copy).
+    None disables pruning. flush_interval: minimum seconds between mid-turn
+    assistant-row flushes (0 = flush on every event; raise under heavy load).
+    attachments_dir: where uploaded files land; defaults to a directory next to
+    the database (<db>-attachments). Pass explicitly to relocate it.
 
     Returns (store, registry) so apps can register graceful-stop hooks, extension
     emitters, etc.
     """
     store = Store(db_path)
-    registry = JobRegistry(store)
+    registry = JobRegistry(store, flush_interval=flush_interval)
+    if attachments_dir is None:
+        p = Path(db_path)
+        attachments_dir = p.parent / f"{p.stem}-attachments"
+    attachments_path = Path(attachments_dir)
 
-    @app.on_event("startup")
-    async def _startup() -> None:  # TODO: migrate to lifespan-style for FastAPI >=0.110 apps
+    # Wrap the app's lifespan rather than using deprecated on_event hooks, so
+    # fairway composes with whatever lifespan the app already has.
+    existing_lifespan = app.router.lifespan_context
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
         await store.open()
         await registry.startup_sweep()
-
-    @app.on_event("shutdown")
-    async def _shutdown() -> None:
+        if retention_days is not None:
+            await store.prune_terminal_event_logs(older_than_days=retention_days)
+        async with existing_lifespan(app):
+            yield
         await store.close()
 
-    app.include_router(build_router(store, registry, runner), prefix=prefix)
+    app.router.lifespan_context = lifespan
+
+    app.include_router(
+        build_router(store, registry, runner, attachments_dir=attachments_path),
+        prefix=prefix,
+    )
     return store, registry

@@ -8,7 +8,7 @@
  * lucide icons. Compare with the previous commit for the zero-dependency look.
  */
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Alert,
   AppBar,
@@ -31,8 +31,8 @@ import {
   Typography,
   createTheme,
 } from "@mui/material";
-import { Check, Minus, Plus, SendHorizontal, ShieldQuestion, Square, X } from "lucide-react";
-import { AgentChatClient, type Session } from "fairway-kit";
+import { Check, Minus, Paperclip, Plus, SendHorizontal, ShieldQuestion, Square, X } from "lucide-react";
+import { AgentChatClient, type Attachment, type Session } from "fairway-kit";
 import {
   ChatItem,
   ChatPanel,
@@ -190,6 +190,32 @@ function MessageBubble({ row }: { row: ChatRow }) {
           overflowWrap: "anywhere",
         }}
       >
+        {row.message?.attachments && row.message.attachments.length > 0 && (
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.8 }}>
+            {row.message.attachments.map((a) =>
+              a.media_type.startsWith("image/") ? (
+                <Box
+                  key={a.id}
+                  component="img"
+                  src={client.attachmentUrl(a.id)}
+                  alt={a.name}
+                  sx={{ maxWidth: 220, maxHeight: 160, borderRadius: 2, border: 1, borderColor: "divider" }}
+                />
+              ) : (
+                <Chip
+                  key={a.id}
+                  size="small"
+                  variant="outlined"
+                  label={a.name}
+                  component="a"
+                  href={client.attachmentUrl(a.id)}
+                  target="_blank"
+                  clickable
+                />
+              )
+            )}
+          </Box>
+        )}
         {row.items.map((item, i) => (
           <ChatItem key={i} item={item} row={row} components={itemComponents} />
         ))}
@@ -319,25 +345,72 @@ const itemComponents: ChatComponents = {
 // -- composer: fully custom, replaces ChatInput -------------------------------
 
 function Composer({ disabled }: { disabled: boolean }) {
-  const { send, stop, streaming } = useChatContext();
+  const { client, sessionId, send, stop, streaming } = useChatContext();
   const [text, setText] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInput = useRef<HTMLInputElement | null>(null);
+  const busy = streaming || uploading;
 
   const submit = () => {
     const t = text.trim();
-    if (!t || streaming || disabled) return;
+    if ((!t && files.length === 0) || busy || disabled || !sessionId) return;
+    const pending = files;
     setText("");
-    void send(t).catch(() => setText(t)); // restore draft on failure
+    setFiles([]);
+    setUploading(true);
+    void (async () => {
+      const refs: Attachment[] = [];
+      for (const f of pending) refs.push(await client.uploadAttachment(sessionId, f));
+      await send(t, refs.length > 0 ? refs : undefined);
+    })()
+      .catch(() => {
+        setText(t);
+        setFiles(pending);
+      })
+      .finally(() => setUploading(false));
   };
 
   return (
-    <Box sx={{ display: "flex", gap: 1, p: 1.5, borderTop: 1, borderColor: "divider" }}>
+    <Box sx={{ display: "flex", flexDirection: "column", borderTop: 1, borderColor: "divider" }}>
+      {files.length > 0 && (
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.8, px: 1.5, pt: 1 }}>
+          {files.map((f, i) => (
+            <Chip
+              key={i}
+              size="small"
+              label={f.name}
+              onDelete={() => setFiles((cur) => cur.filter((_, j) => j !== i))}
+              deleteIcon={<X size={14} />}
+            />
+          ))}
+        </Box>
+      )}
+      <Box sx={{ display: "flex", gap: 1, p: 1.5 }}>
+      <input
+        ref={fileInput}
+        type="file"
+        multiple
+        hidden
+        onChange={(e) => {
+          setFiles((cur) => [...cur, ...Array.from(e.target.files ?? [])]);
+          if (fileInput.current) fileInput.current.value = "";
+        }}
+      />
+      <Tooltip title="Attach files">
+        <span>
+          <IconButton disabled={disabled || busy} onClick={() => fileInput.current?.click()}>
+            <Paperclip size={18} />
+          </IconButton>
+        </span>
+      </Tooltip>
       <TextField
         fullWidth
         size="small"
         autoFocus
         placeholder={disabled ? "Create a session to start" : "Message the agent"}
         value={text}
-        disabled={disabled || streaming}
+        disabled={disabled || busy}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && submit()}
       />
@@ -350,12 +423,17 @@ function Composer({ disabled }: { disabled: boolean }) {
       ) : (
         <Tooltip title="Send">
           <span>
-            <IconButton color="primary" onClick={submit} disabled={disabled || !text.trim()}>
+            <IconButton
+              color="primary"
+              onClick={submit}
+              disabled={disabled || busy || (!text.trim() && files.length === 0)}
+            >
               <SendHorizontal size={18} />
             </IconButton>
           </span>
         </Tooltip>
       )}
+      </Box>
     </Box>
   );
 }

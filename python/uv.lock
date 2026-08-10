@@ -247,6 +247,7 @@ source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
     { name = "fastapi" },
+    { name = "python-multipart" },
 ]
 
 [package.optional-dependencies]
@@ -267,6 +268,7 @@ requires-dist = [
     { name = "aiosqlite", specifier = ">=0.20" },
     { name = "claude-agent-sdk", marker = "extra == 'claude'", specifier = ">=0.2" },
     { name = "fastapi", specifier = ">=0.115" },
+    { name = "python-multipart", specifier = ">=0.0.9" },
 ]
 provides-extras = ["claude"]
 

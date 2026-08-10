@@ -9,6 +9,13 @@ export interface Session {
   created_at: string;
 }
 
+export interface Attachment {
+  id: string;
+  name: string;
+  media_type: string;
+  size: number;
+}
+
 export interface Message {
   id: string;
   session_id: string;
@@ -16,7 +23,7 @@ export interface Message {
   content: string;
   events: ChatEvent[] | null;
   streaming: boolean;
-  attachments?: unknown[] | null;
+  attachments?: Attachment[] | null;
   created_at: string;
 }
 
@@ -95,8 +102,22 @@ export class AgentChatClient {
   activeJob(sessionId: string): Promise<{ job_id: string | null; status?: string }> {
     return this.req("GET", `/sessions/${sessionId}/active-job`);
   }
-  send(sessionId: string, content: string, attachments?: unknown[]): Promise<SendResult> {
+  send(sessionId: string, content: string, attachments?: Attachment[]): Promise<SendResult> {
     return this.req("POST", `/sessions/${sessionId}/send`, { content, attachments });
+  }
+  async uploadAttachment(sessionId: string, file: File | Blob): Promise<Attachment> {
+    const form = new FormData();
+    form.append("file", file);
+    const resp = await this.fetchFn(`${this.baseUrl}/sessions/${sessionId}/attachments`, {
+      method: "POST",
+      body: form,
+    });
+    if (!resp.ok) throw new Error(`upload failed: HTTP ${resp.status}`);
+    return (await resp.json()) as Attachment;
+  }
+  /** URL for displaying/downloading an uploaded attachment. */
+  attachmentUrl(attachmentId: string): string {
+    return `${this.baseUrl}/attachments/${attachmentId}`;
   }
   stop(jobId: string): Promise<{ status: string }> {
     return this.req("POST", `/jobs/${jobId}/stop`);

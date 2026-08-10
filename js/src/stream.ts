@@ -15,6 +15,12 @@ export interface StreamOptions {
   /** Reconnect on network drop until a terminal event arrives. Default true. */
   reconnect?: boolean;
   maxReconnectDelayMs?: number;
+  /** Liveness watchdog: if no bytes (data or heartbeat) arrive for this long,
+   * the connection is presumed dead and torn down for a reconnect. The server
+   * heartbeats every 20s, so the default (45s) tolerates one lost beat.
+   * Guards against half-open sockets that never EOF (dev proxies, sleep/wake,
+   * NAT timeouts) — without it a killed server can hang the reader forever. */
+  staleMs?: number;
   onEvent: (ev: ChatEvent) => void;
   onConnectionChange?: (state: "connecting" | "open" | "reconnecting" | "closed") => void;
 }
@@ -33,6 +39,7 @@ export function streamJob(baseUrl: string, jobId: string, opts: StreamOptions): 
   const fetchFn: typeof fetch = opts.fetchFn ?? ((...args) => fetch(...args));
   const reconnect = opts.reconnect ?? true;
   const maxDelay = opts.maxReconnectDelayMs ?? 15_000;
+  const staleMs = opts.staleMs ?? 45_000;
 
   let lastSeq = opts.since ?? 0;
 
@@ -40,9 +47,18 @@ export function streamJob(baseUrl: string, jobId: string, opts: StreamOptions): 
     let attempt = 0;
     for (;;) {
       opts.onConnectionChange?.(attempt === 0 ? "connecting" : "reconnecting");
+      // Per-attempt controller so the staleness watchdog can kill one dead
+      // connection without ending the whole stream.
+      const attemptCtrl = new AbortController();
+      const onOuterAbort = () => attemptCtrl.abort();
+      controller.signal.addEventListener("abort", onOuterAbort, { once: true });
+      let lastByteAt = Date.now();
+      const watchdog = setInterval(() => {
+        if (Date.now() - lastByteAt > staleMs) attemptCtrl.abort();
+      }, Math.min(5_000, staleMs));
       try {
         const resp = await fetchFn(`${baseUrl}/jobs/${jobId}/stream?since=${lastSeq}`, {
-          signal: controller.signal,
+          signal: attemptCtrl.signal,
           headers: { Accept: "text/event-stream" },
         });
         if (!resp.ok || !resp.body) throw new Error(`stream HTTP ${resp.status}`);
@@ -55,6 +71,7 @@ export function streamJob(baseUrl: string, jobId: string, opts: StreamOptions): 
         for (;;) {
           const { value, done: eof } = await reader.read();
           if (eof) break;
+          lastByteAt = Date.now(); // heartbeats count — that's their job
           buf += decoder.decode(value, { stream: true });
           let idx: number;
           while ((idx = buf.indexOf("\n\n")) !== -1) {
@@ -66,7 +83,7 @@ export function streamJob(baseUrl: string, jobId: string, opts: StreamOptions): 
             lastSeq = ev.seq;
             opts.onEvent(ev);
             if (isTerminal(ev)) {
-              controller.abort(); // release the connection
+              attemptCtrl.abort(); // release the connection
               opts.onConnectionChange?.("closed");
               return ev;
             }
@@ -90,6 +107,9 @@ export function streamJob(baseUrl: string, jobId: string, opts: StreamOptions): 
           opts.onConnectionChange?.("closed");
           return null;
         }
+      } finally {
+        clearInterval(watchdog);
+        controller.signal.removeEventListener("abort", onOuterAbort);
       }
     }
   })();
