@@ -8,10 +8,10 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AgentChatClient, ConflictError, type Message } from "../client";
-import { fold, type StreamItem } from "../fold";
-import { streamJob } from "../stream";
-import { isTerminal, type ChatEvent } from "../events";
+import { AgentChatClient, ConflictError, type Message } from "../client.js";
+import { fold, type StreamItem } from "../fold.js";
+import { streamJob } from "../stream.js";
+import { isTerminal, type ChatEvent } from "../events.js";
 
 export interface UseAgentChatOptions {
   /** Handler for x_* / unknown events (sync hints, viewer commands, ...). */

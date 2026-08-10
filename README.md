@@ -1,5 +1,8 @@
 # fairway
 
+[![ci](https://github.com/datagoboom/fairway/actions/workflows/ci.yml/badge.svg)](https://github.com/datagoboom/fairway/actions/workflows/ci.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 **A dev kit for building local, agent-backed applications.** Two small
 libraries — a Python backend and a TypeScript frontend — connected by a written
 wire protocol, so the app you're building on your own machine can have an agent

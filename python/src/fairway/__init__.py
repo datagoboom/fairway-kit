@@ -1,5 +1,6 @@
-"""fairway — backend library for the Agent Chat Protocol (see PROTOCOL.md)."""
+"""fairway — dev kit backend for local agent-backed apps (see PROTOCOL.md)."""
 
+from . import events
 from .events import PROTOCOL_VERSION, TERMINAL_TYPES
 from .fold import fold, fold_all
 from .jobs import JobRegistry
@@ -8,6 +9,7 @@ from .runner import Emit, Runner, TurnContext, TurnResult
 from .store import Store
 
 __all__ = [
+    "events",
     "PROTOCOL_VERSION",
     "TERMINAL_TYPES",
     "fold",

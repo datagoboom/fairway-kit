@@ -3,18 +3,36 @@
   "version": "0.1.0",
   "description": "Dev kit frontend for local agent-backed apps: resumable SSE streaming, event fold, headless React chat components",
   "license": "MIT",
+  "author": "Andrew Long",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/datagoboom/fairway.git",
+    "directory": "js"
+  },
+  "homepage": "https://github.com/datagoboom/fairway",
+  "keywords": ["agent", "chat", "sse", "streaming", "claude", "llm", "react", "headless", "local-first"],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./dist/index.js",
-    "./react": "./dist/react/index.js",
-    "./react/markdown": "./dist/react/markdown.js",
-    "./react/styles.css": "./src/react/styles.css"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "default": "./dist/react/index.js"
+    },
+    "./react/markdown": {
+      "types": "./dist/react/markdown.d.ts",
+      "default": "./dist/react/markdown.js"
+    },
+    "./react/styles.css": "./dist/react/styles.css"
   },
-  "files": ["dist", "src/react/styles.css"],
+  "sideEffects": ["*.css"],
+  "files": ["dist"],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && cp src/react/styles.css dist/react/styles.css",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

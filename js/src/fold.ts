@@ -7,7 +7,7 @@
  * mirrored by python/src/fairway/fold.py.
  */
 
-import type { ChatEvent } from "./events";
+import type { ChatEvent } from "./events.js";
 
 export interface TextItem {
   type: "text" | "thinking";

@@ -91,7 +91,10 @@ class ClaudeSDKRunner:
     system_prompt: Callable[[TurnContext], str] | None = None
     tool_meta: dict[str, ToolMeta] = field(default_factory=lambda: dict(DEFAULT_TOOL_META))
     mcp_servers: dict[str, Any] = field(default_factory=dict)
-    strict_mcp_config: bool = False
+    # Safe by default: without strict mode the CLI also loads user/project MCP
+    # servers, silently widening the agent's tool surface beyond what the app
+    # declared. Opt out only if you deliberately want host-level MCP servers.
+    strict_mcp_config: bool = True
     env: dict[str, str] = field(default_factory=dict)  # extra subprocess env
     flush_interval_s: float = FLUSH_INTERVAL_S
     flush_min_chars: int = FLUSH_MIN_CHARS

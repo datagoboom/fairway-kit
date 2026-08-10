@@ -1,4 +1,4 @@
-export { useAgentChat, type UseAgentChatOptions } from "./useAgentChat";
+export { useAgentChat, type UseAgentChatOptions } from "./useAgentChat.js";
 export {
   ChatProvider,
   useChatContext,
@@ -7,7 +7,7 @@ export {
   type ChatInstance,
   type ChatProviderProps,
   type ChatRow,
-} from "./context";
+} from "./context.js";
 export {
   ChatPanel,
   ChatMessage,
@@ -16,5 +16,5 @@ export {
   type ChatPanelProps,
   type ChatComponents,
   type ItemComponentProps,
-} from "./ChatPanel";
-export { ChatInput, type ChatInputProps } from "./ChatInput";
+} from "./ChatPanel.js";
+export { ChatInput, type ChatInputProps } from "./ChatInput.js";

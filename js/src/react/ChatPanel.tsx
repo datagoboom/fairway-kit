@@ -19,9 +19,9 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import type { ChatEvent } from "../events";
-import type { ErrorItem, StreamItem, TextItem, ToolItem } from "../fold";
-import { useChatContext, useChatRows, type ChatRow } from "./context";
+import type { ChatEvent } from "../events.js";
+import type { ErrorItem, StreamItem, TextItem, ToolItem } from "../fold.js";
+import { useChatContext, useChatRows, type ChatRow } from "./context.js";
 
 export interface ItemComponentProps<I extends StreamItem = StreamItem> {
   item: I;

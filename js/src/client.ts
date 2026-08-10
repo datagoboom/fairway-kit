@@ -1,6 +1,6 @@
 /** Thin REST client for the HTTP surface (PROTOCOL.md section 11). */
 
-import type { ChatEvent } from "./events";
+import type { ChatEvent } from "./events.js";
 
 export interface Session {
   id: string;

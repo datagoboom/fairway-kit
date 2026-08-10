@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useState, type CSSProperties, type ReactNode } from "react";
-import { useChatContext } from "./context";
+import { useChatContext } from "./context.js";
 
 export interface ChatInputProps {
   placeholder?: string;

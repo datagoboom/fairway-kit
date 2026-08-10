@@ -6,7 +6,7 @@
  * inherent (server only sends seq > since). One bad frame is skipped, never fatal.
  */
 
-import { type ChatEvent, isTerminal } from "./events";
+import { type ChatEvent, isTerminal } from "./events.js";
 
 export interface StreamOptions {
   since?: number;

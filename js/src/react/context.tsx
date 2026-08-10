@@ -10,9 +10,9 @@
  */
 
 import { createContext, useContext, useMemo, type ReactNode } from "react";
-import type { AgentChatClient, Message } from "../client";
-import { foldAll, type StreamItem } from "../fold";
-import { useAgentChat, type UseAgentChatOptions } from "./useAgentChat";
+import type { AgentChatClient, Message } from "../client.js";
+import { foldAll, type StreamItem } from "../fold.js";
+import { useAgentChat, type UseAgentChatOptions } from "./useAgentChat.js";
 
 export type ChatInstance = ReturnType<typeof useAgentChat>;
 

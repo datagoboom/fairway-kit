@@ -3,7 +3,19 @@ name = "fairway"
 version = "0.1.0"
 description = "Dev kit backend for local agent-backed apps: durable, resumable agent chat over FastAPI + SQLite"
 license = "MIT"
+readme = "README.md"
+authors = [{ name = "Andrew Long" }]
 requires-python = ">=3.12"
+keywords = ["agent", "chat", "sse", "streaming", "claude", "llm", "fastapi", "local-first"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Communications :: Chat",
+    "Typing :: Typed",
+]
 dependencies = [
     "fastapi>=0.115",
     "aiosqlite>=0.20",
@@ -11,6 +23,11 @@ dependencies = [
 
 [project.optional-dependencies]
 claude = ["claude-agent-sdk>=0.2"]
+
+[project.urls]
+Homepage = "https://github.com/datagoboom/fairway"
+Repository = "https://github.com/datagoboom/fairway"
+Protocol = "https://github.com/datagoboom/fairway/blob/main/PROTOCOL.md"
 
 [dependency-groups]
 dev = [
