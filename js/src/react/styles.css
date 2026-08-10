@@ -108,6 +108,38 @@
   color: var(--fw-error);
 }
 
+/* inline permission approval card */
+[data-fairway-item="permission"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  align-self: stretch;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px dashed #6a5a3a;
+  background: #14181c;
+  font-size: 13px;
+}
+[data-fairway-item="permission"][data-status="allowed"] { border-color: #3a5a3a; border-style: solid; }
+[data-fairway-item="permission"][data-status="denied"] { border-color: #6a3a3a; border-style: solid; }
+[data-fairway-item="permission"][data-status="interrupted"] { border-style: solid; opacity: 0.7; }
+[data-fairway-permission-detail] { color: var(--fw-text-dim); }
+[data-fairway-permission-detail]::before { content: " · "; }
+[data-fairway-permission-outcome] { color: var(--fw-text-dim); margin-left: auto; }
+[data-fairway-permission-actions] { display: inline-flex; gap: 6px; margin-left: auto; }
+[data-fairway-permission-actions] button {
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--fw-border);
+  background: var(--fw-accent);
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+}
+[data-fairway-allow] { border-color: #3a5a3a; }
+[data-fairway-deny] { border-color: #6a3a3a; }
+
 /* bouncing-dots working indicator */
 [data-fairway-item="typing"] {
   display: inline-flex;

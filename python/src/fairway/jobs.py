@@ -13,6 +13,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import uuid
 from typing import Any, AsyncIterator, Awaitable, Callable
 
 from . import events as E
@@ -34,6 +35,7 @@ class _LiveJob:
         self.ctx: TurnContext | None = None
         self.graceful_stop: Callable[[], Awaitable[None]] | None = None
         self.terminal = asyncio.Event()
+        self.pending_permissions: dict[str, asyncio.Future[str]] = {}
 
 
 class JobRegistry:
@@ -93,6 +95,35 @@ class JobRegistry:
             self._fan_out(live, stamped)
             return stamped
 
+        async def request_permission(
+            *,
+            tool: str,
+            kind: str = "unknown",
+            label: str | None = None,
+            detail: str | None = None,
+            input: dict[str, Any] | None = None,
+        ) -> str:
+            # Session allow memory: previously allow_session'd tools skip the
+            # gate silently (the tool_call event still shows the action).
+            if tool in await self._store.get_allowed_tools(ctx.session["id"]):
+                return "allow"
+            request_id = uuid.uuid4().hex
+            future: asyncio.Future[str] = asyncio.get_running_loop().create_future()
+            live.pending_permissions[request_id] = future
+            try:
+                await emit(
+                    E.permission_request(request_id, tool, kind, label or tool, detail, input)
+                )
+                decision = await future  # indefinite hold — resolved by the user or by stop()
+            finally:
+                live.pending_permissions.pop(request_id, None)
+            await emit(E.permission_resolved(request_id, decision))
+            if decision == "allow_session":
+                await self._store.add_allowed_tool(ctx.session["id"], tool)
+            return decision
+
+        ctx.request_permission = request_permission
+
         try:
             await emit(E.message_start(ctx.assistant_message_id))
             result = await runner(ctx, emit)
@@ -107,6 +138,10 @@ class JobRegistry:
                                E.error(str(exc), message_id=ctx.assistant_message_id),
                                content=final_text(emitted), status="error")
         finally:
+            for future in live.pending_permissions.values():
+                if not future.done():
+                    future.cancel()
+            live.pending_permissions.clear()
             if ctx.new_provider_session_id:
                 await self._store.set_provider_session_id(
                     ctx.session["id"], ctx.new_provider_session_id
@@ -186,6 +221,11 @@ class JobRegistry:
         if live is None:
             job = await self._store.get_job(job_id)
             return job["status"] if job else "unknown"
+        # A held permission gate must never make a turn unstoppable: resolve
+        # all pending requests as deny before interrupting (PROTOCOL.md).
+        for future in live.pending_permissions.values():
+            if not future.done():
+                future.set_result("deny")
         graceful = live.graceful_stop or (live.ctx.graceful_stop if live.ctx else None)
         if graceful is not None:
             with contextlib.suppress(Exception):
@@ -205,3 +245,17 @@ class JobRegistry:
         live = self._live.get(job_id)
         if live is not None:
             live.graceful_stop = fn
+
+    # -- permissions ---------------------------------------------------------
+
+    def resolve_permission(self, job_id: str, request_id: str, decision: str) -> bool:
+        """Resolve a pending permission_request. Returns False if the job isn't
+        live or the request is unknown/already resolved."""
+        live = self._live.get(job_id)
+        if live is None:
+            return False
+        future = live.pending_permissions.get(request_id)
+        if future is None or future.done():
+            return False
+        future.set_result(decision)
+        return True

@@ -69,10 +69,44 @@ def fold(items: list[Item], ev: dict[str, Any]) -> list[Item]:
         items.append(orphan)
         return items
 
+    if t == "permission_request":
+        _close_trailing(items)
+        item = {
+            "type": "permission",
+            "id": ev["id"],
+            "tool": ev["tool"],
+            "kind": ev["kind"],
+            "label": ev["label"],
+            "status": "pending",
+        }
+        if "detail" in ev:
+            item["detail"] = ev["detail"]
+        items.append(item)
+        return items
+
+    if t == "permission_resolved":
+        decision = ev["decision"]
+        status = "denied" if decision == "deny" else "allowed"
+        for item in reversed(items):
+            if (
+                item.get("type") == "permission"
+                and item.get("id") == ev["id"]
+                and item.get("status") == "pending"
+            ):
+                item["status"] = status
+                if decision == "allow_session":
+                    item["scope"] = "session"
+                return items
+        orphan = {"type": "permission", "id": ev["id"], "status": status, "orphan": True}
+        items.append(orphan)
+        return items
+
     if t in TERMINAL_TYPES:
         _close_trailing(items)
         for item in items:
             if item.get("type") == "tool" and item.get("status") == "running":
+                item["status"] = "interrupted"
+            if item.get("type") == "permission" and item.get("status") == "pending":
                 item["status"] = "interrupted"
         if t == "error":
             items.append({"type": "error", "message": ev["message"]})

@@ -1,6 +1,6 @@
 /** Thin REST client for the HTTP surface (PROTOCOL.md section 11). */
 
-import type { ChatEvent } from "./events.js";
+import type { ChatEvent, PermissionDecision } from "./events.js";
 
 export interface Session {
   id: string;
@@ -79,6 +79,16 @@ export class AgentChatClient {
   }
   stop(jobId: string): Promise<{ status: string }> {
     return this.req("POST", `/jobs/${jobId}/stop`);
+  }
+  resolvePermission(
+    jobId: string,
+    requestId: string,
+    decision: PermissionDecision
+  ): Promise<{ status: string }> {
+    return this.req("POST", `/jobs/${jobId}/permission`, {
+      request_id: requestId,
+      decision,
+    });
   }
   events(jobId: string, since = 0): Promise<{ events: ChatEvent[]; terminal: boolean }> {
     return this.req("GET", `/jobs/${jobId}/events?since=${since}`);

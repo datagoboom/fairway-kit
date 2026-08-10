@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     id TEXT PRIMARY KEY,
     name TEXT,
     provider_session_id TEXT,
+    allowed_tools_json TEXT,
     created_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS messages (
@@ -73,6 +74,15 @@ class Store:
         await self._db.execute("PRAGMA foreign_keys=ON")
         await self._db.executescript(SCHEMA)
         await self._db.commit()
+        await self._migrate()
+
+    async def _migrate(self) -> None:
+        """Additive migrations for databases created by older versions."""
+        cur = await self.db.execute("PRAGMA table_info(sessions)")
+        cols = {row["name"] for row in await cur.fetchall()}
+        if "allowed_tools_json" not in cols:  # added in protocol 0.2
+            await self.db.execute("ALTER TABLE sessions ADD COLUMN allowed_tools_json TEXT")
+            await self.db.commit()
 
     async def close(self) -> None:
         if self._db:
@@ -115,6 +125,24 @@ class Store:
             await self.db.execute(
                 "UPDATE sessions SET provider_session_id = ? WHERE id = ?",
                 (provider_session_id, session_id),
+            )
+            await self.db.commit()
+
+    async def get_allowed_tools(self, session_id: str) -> set[str]:
+        cur = await self.db.execute(
+            "SELECT allowed_tools_json FROM sessions WHERE id = ?", (session_id,)
+        )
+        row = await cur.fetchone()
+        raw = row["allowed_tools_json"] if row else None
+        return set(json.loads(raw)) if raw else set()
+
+    async def add_allowed_tool(self, session_id: str, tool: str) -> None:
+        tools = await self.get_allowed_tools(session_id)
+        tools.add(tool)
+        async with self._write_lock:
+            await self.db.execute(
+                "UPDATE sessions SET allowed_tools_json = ? WHERE id = ?",
+                (json.dumps(sorted(tools)), session_id),
             )
             await self.db.commit()
 

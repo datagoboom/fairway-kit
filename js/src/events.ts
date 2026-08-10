@@ -1,6 +1,6 @@
 /** Agent Chat Protocol event types (PROTOCOL.md sections 2-3). */
 
-export const PROTOCOL_VERSION = "0.1";
+export const PROTOCOL_VERSION = "0.2";
 
 export interface EventBase {
   /** Per-job monotonic sequence, assigned at persist time. */
@@ -42,6 +42,22 @@ export interface ToolResultEvent extends EventBase {
   summary?: string;
   detail?: string;
 }
+export type PermissionDecision = "allow" | "allow_session" | "deny";
+
+export interface PermissionRequestEvent extends EventBase {
+  type: "permission_request";
+  id: string;
+  tool: string;
+  kind: string;
+  label: string;
+  detail?: string;
+  input?: Record<string, unknown>;
+}
+export interface PermissionResolvedEvent extends EventBase {
+  type: "permission_resolved";
+  id: string;
+  decision: PermissionDecision;
+}
 export interface DoneEvent extends EventBase {
   type: "done";
   /** Finalized assistant row, committed before this event was emitted. */
@@ -69,6 +85,8 @@ export type ChatEvent =
   | ThinkingEvent
   | ToolCallEvent
   | ToolResultEvent
+  | PermissionRequestEvent
+  | PermissionResolvedEvent
   | DoneEvent
   | ErrorEvent
   | CancelledEvent

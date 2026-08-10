@@ -11,7 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AgentChatClient, ConflictError, type Message } from "../client.js";
 import { fold, type StreamItem } from "../fold.js";
 import { streamJob } from "../stream.js";
-import { isTerminal, type ChatEvent } from "../events.js";
+import { isTerminal, type ChatEvent, type PermissionDecision } from "../events.js";
 
 export interface UseAgentChatOptions {
   /** Handler for x_* / unknown events (sync hints, viewer commands, ...). */
@@ -158,5 +158,13 @@ export function useAgentChat(
     // event within stop_grace, which unlocks via handleTerminal.
   }, [client, activeJobId]);
 
-  return { messages, liveItems, streaming, connection, activeJobId, send, stop };
+  const respondPermission = useCallback(
+    async (requestId: string, decision: PermissionDecision) => {
+      if (!activeJobId) throw new Error("no active job to resolve a permission for");
+      await client.resolvePermission(activeJobId, requestId, decision);
+    },
+    [client, activeJobId]
+  );
+
+  return { messages, liveItems, streaming, connection, activeJobId, send, stop, respondPermission };
 }

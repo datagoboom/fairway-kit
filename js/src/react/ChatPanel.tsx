@@ -20,7 +20,7 @@ import {
   type ReactNode,
 } from "react";
 import type { ChatEvent } from "../events.js";
-import type { ErrorItem, StreamItem, TextItem, ToolItem } from "../fold.js";
+import type { ErrorItem, PermissionItem, StreamItem, TextItem, ToolItem } from "../fold.js";
 import { useChatContext, useChatRows, type ChatRow } from "./context.js";
 
 export interface ItemComponentProps<I extends StreamItem = StreamItem> {
@@ -35,6 +35,9 @@ export interface ChatComponents {
   Text?: ComponentType<ItemComponentProps<TextItem>> | null;
   Thinking?: ComponentType<ItemComponentProps<TextItem>> | null;
   Tool?: ComponentType<ItemComponentProps<ToolItem>> | null;
+  /** Approval card for permission items (default: inline Allow / Always allow /
+   * Deny buttons while pending, outcome text after). */
+  Permission?: ComponentType<ItemComponentProps<PermissionItem>> | null;
   Error?: ComponentType<ItemComponentProps<ErrorItem>> | null;
   /** Working indicator shown while row.typing (default: bouncing dots). */
   Typing?: ComponentType<{ row: ChatRow }> | null;
@@ -177,6 +180,10 @@ export function ChatItem({
       const C = pick(components?.Tool, DefaultTool);
       return C && <C item={item} row={row} />;
     }
+    case "permission": {
+      const C = pick(components?.Permission, PermissionPrompt);
+      return C && <C item={item} row={row} />;
+    }
     case "error": {
       const C = pick(components?.Error, DefaultError);
       return C && <C item={item} row={row} />;
@@ -214,6 +221,49 @@ function DefaultTool({ item }: ItemComponentProps<ToolItem>) {
 
 function DefaultError({ item }: ItemComponentProps<ErrorItem>) {
   return <div data-fairway-item="error">{item.message}</div>;
+}
+
+/** Default inline approval card. Pending: label + Allow / Always allow / Deny
+ * buttons wired to the permission endpoint via context. Resolved/interrupted:
+ * a compact outcome line. Exported for reuse inside custom bubbles. */
+export function PermissionPrompt({ item }: ItemComponentProps<PermissionItem>) {
+  const { respondPermission } = useChatContext();
+  const decide = (decision: "allow" | "allow_session" | "deny") => {
+    void respondPermission(item.id, decision).catch(() => {
+      // Already resolved elsewhere (another tab, stop) — replay will correct us.
+    });
+  };
+  return (
+    <div data-fairway-item="permission" data-status={item.status}>
+      <span data-fairway-permission-label="">
+        {item.label ?? item.tool ?? item.id}
+        {item.detail && <span data-fairway-permission-detail="">{item.detail}</span>}
+      </span>
+      {item.status === "pending" ? (
+        <span data-fairway-permission-actions="">
+          <button type="button" data-fairway-allow="" onClick={() => decide("allow")}>
+            Allow
+          </button>
+          <button type="button" data-fairway-allow-session="" onClick={() => decide("allow_session")}>
+            Always allow
+          </button>
+          <button type="button" data-fairway-deny="" onClick={() => decide("deny")}>
+            Deny
+          </button>
+        </span>
+      ) : (
+        <span data-fairway-permission-outcome="">
+          {item.status === "allowed"
+            ? item.scope === "session"
+              ? "allowed for session"
+              : "allowed"
+            : item.status === "denied"
+              ? "denied"
+              : "interrupted"}
+        </span>
+      )}
+    </div>
+  );
 }
 
 /** Classic bouncing-dots working indicator; animation lives in styles.css

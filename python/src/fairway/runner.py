@@ -36,6 +36,14 @@ class TurnContext:
     # escalating to a hard task cancel (PROTOCOL.md 9).
     graceful_stop: Callable[[], Awaitable[None]] | None = None
 
+    # Registry-provided (PROTOCOL.md, Permissions). Await it to ask the user
+    # for tool approval: request_permission(tool=..., kind=..., label=...,
+    # detail=None, input=None) -> "allow" | "allow_session" | "deny".
+    # Auto-returns "allow" for tools in the session's allow set; otherwise
+    # emits permission_request, holds until the user resolves it (indefinite),
+    # emits permission_resolved, and records allow_session decisions.
+    request_permission: Callable[..., Awaitable[str]] | None = None
+
 
 @dataclass
 class TurnResult:

@@ -127,6 +127,48 @@
       ]
     },
     {
+      "name": "permission request pends, allow_session resolves it with session scope",
+      "events": [
+        { "seq": 1, "type": "message_start", "message_id": "m1" },
+        { "seq": 2, "type": "text", "content": "I need to search." },
+        { "seq": 3, "type": "permission_request", "id": "p1", "tool": "WebSearch", "kind": "web", "label": "Web search", "detail": "mets roster" },
+        { "seq": 4, "type": "permission_resolved", "id": "p1", "decision": "allow_session" },
+        { "seq": 5, "type": "tool_call", "id": "t1", "tool": "WebSearch", "kind": "web", "label": "Web search" },
+        { "seq": 6, "type": "tool_result", "id": "t1", "ok": true },
+        { "seq": 7, "type": "done", "message_id": "m1" }
+      ],
+      "items": [
+        { "type": "text", "content": "I need to search.", "open": false },
+        { "type": "permission", "id": "p1", "tool": "WebSearch", "kind": "web", "label": "Web search", "detail": "mets roster", "status": "allowed", "scope": "session" },
+        { "type": "tool", "id": "t1", "tool": "WebSearch", "kind": "web", "label": "Web search", "status": "ok" }
+      ]
+    },
+    {
+      "name": "denied permission",
+      "events": [
+        { "seq": 1, "type": "message_start", "message_id": "m1" },
+        { "seq": 2, "type": "permission_request", "id": "p1", "tool": "Bash", "kind": "shell", "label": "Run command" },
+        { "seq": 3, "type": "permission_resolved", "id": "p1", "decision": "deny" },
+        { "seq": 4, "type": "text_block", "content": "Understood, skipping that." },
+        { "seq": 5, "type": "done", "message_id": "m1" }
+      ],
+      "items": [
+        { "type": "permission", "id": "p1", "tool": "Bash", "kind": "shell", "label": "Run command", "status": "denied" },
+        { "type": "text", "content": "Understood, skipping that.", "open": false }
+      ]
+    },
+    {
+      "name": "pending permission mid-stream; terminal marks it interrupted",
+      "events": [
+        { "seq": 1, "type": "message_start", "message_id": "m1" },
+        { "seq": 2, "type": "permission_request", "id": "p1", "tool": "Write", "kind": "file-write", "label": "Write file" },
+        { "seq": 3, "type": "cancelled", "message_id": "m1" }
+      ],
+      "items": [
+        { "type": "permission", "id": "p1", "tool": "Write", "kind": "file-write", "label": "Write file", "status": "interrupted" }
+      ]
+    },
+    {
       "name": "mid-stream snapshot: open text run and running tool remain open (no terminal yet)",
       "events": [
         { "seq": 1, "type": "message_start", "message_id": "m1" },

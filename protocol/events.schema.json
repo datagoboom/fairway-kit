@@ -46,6 +46,30 @@
       }
     },
     {
+      "if": { "properties": { "type": { "const": "permission_request" } } },
+      "then": {
+        "required": ["id", "tool", "kind", "label"],
+        "properties": {
+          "id": { "type": "string" },
+          "tool": { "type": "string" },
+          "kind": { "type": "string" },
+          "label": { "type": "string" },
+          "detail": { "type": "string" },
+          "input": { "type": "object" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "type": { "const": "permission_resolved" } } },
+      "then": {
+        "required": ["id", "decision"],
+        "properties": {
+          "id": { "type": "string" },
+          "decision": { "enum": ["allow", "allow_session", "deny"] }
+        }
+      }
+    },
+    {
       "if": { "properties": { "type": { "const": "done" } } },
       "then": { "required": ["message_id"], "properties": { "message_id": { "type": "string" }, "reason": { "type": "string" } } }
     },
@@ -63,7 +87,7 @@
           "type": {
             "not": {
               "anyOf": [
-                { "enum": ["message_start", "text", "text_block", "thinking", "tool_call", "tool_result", "done", "error", "cancelled"] },
+                { "enum": ["message_start", "text", "text_block", "thinking", "tool_call", "tool_result", "permission_request", "permission_resolved", "done", "error", "cancelled"] },
                 { "pattern": "^x_" }
               ]
             }

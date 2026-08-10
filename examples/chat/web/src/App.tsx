@@ -31,7 +31,7 @@ import {
   Typography,
   createTheme,
 } from "@mui/material";
-import { Check, Minus, Plus, SendHorizontal, Square, X } from "lucide-react";
+import { Check, Minus, Plus, SendHorizontal, ShieldQuestion, Square, X } from "lucide-react";
 import { AgentChatClient, type Session } from "fairway-kit";
 import {
   ChatItem,
@@ -43,7 +43,7 @@ import {
   type ItemComponentProps,
 } from "fairway-kit/react";
 import { MarkdownText } from "fairway-kit/react/markdown";
-import type { ErrorItem, TextItem, ToolItem } from "fairway-kit";
+import type { ErrorItem, PermissionItem, TextItem, ToolItem } from "fairway-kit";
 
 const client = new AgentChatClient("/api/chat");
 
@@ -257,10 +257,62 @@ function ErrorAlert({ item }: ItemComponentProps<ErrorItem>) {
   return <Alert severity="error" variant="outlined">{item.message}</Alert>;
 }
 
+/** MUI take on the inline approval card (the library ships a default too). */
+function PermissionCard({ item }: ItemComponentProps<PermissionItem>) {
+  const { respondPermission } = useChatContext();
+  const decide = (d: "allow" | "allow_session" | "deny") =>
+    void respondPermission(item.id, d).catch(() => undefined);
+  const pending = item.status === "pending";
+  return (
+    <Paper
+      variant="outlined"
+      sx={{
+        px: 1.5, py: 1, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1,
+        borderStyle: pending ? "dashed" : "solid",
+        borderColor: item.status === "allowed" ? "success.dark"
+          : item.status === "denied" ? "error.dark"
+          : pending ? "warning.dark" : "divider",
+        bgcolor: "background.default",
+      }}
+    >
+      <ShieldQuestion size={16} />
+      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+        {item.label ?? item.tool}
+      </Typography>
+      {item.detail && (
+        <Typography variant="body2" color="text.secondary" noWrap sx={{ maxWidth: 260 }}>
+          {item.detail}
+        </Typography>
+      )}
+      <Box sx={{ flex: 1 }} />
+      {pending ? (
+        <Box sx={{ display: "flex", gap: 0.8 }}>
+          <Button size="small" variant="outlined" color="success" onClick={() => decide("allow")}>
+            Allow
+          </Button>
+          <Button size="small" variant="outlined" onClick={() => decide("allow_session")}>
+            Always allow
+          </Button>
+          <Button size="small" variant="outlined" color="error" onClick={() => decide("deny")}>
+            Deny
+          </Button>
+        </Box>
+      ) : (
+        <Typography variant="caption" color="text.secondary">
+          {item.status === "allowed"
+            ? item.scope === "session" ? "allowed for session" : "allowed"
+            : item.status}
+        </Typography>
+      )}
+    </Paper>
+  );
+}
+
 const itemComponents: ChatComponents = {
   Text: MarkdownText,
   Tool: ToolChip,
   Thinking: ThinkingText,
+  Permission: PermissionCard,
   Error: ErrorAlert,
 };
 

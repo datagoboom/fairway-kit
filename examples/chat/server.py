@@ -27,13 +27,12 @@ def build_runner():
     return ClaudeSDKRunner(
         model=os.environ.get("FAIRWAY_MODEL", "claude-opus-4-8"),
         auth=os.environ.get("FAIRWAY_AUTH", "inherit"),  # type: ignore[arg-type]
-        # A deliberately small, safe tool surface for the demo:
+        # A deliberately small tool surface for the demo. Read-only tools are
+        # pre-approved; WebSearch/WebFetch go through the permission gate
+        # (inline approval in the chat, with per-session allow memory).
         tools=["Read", "Glob", "Grep", "WebSearch", "WebFetch"],
-        allowed_tools=["Read", "Glob", "Grep", "WebSearch", "WebFetch"],
-        permission_mode="dontAsk",
-        # Without this, the CLI also loads user/project MCP servers (e.g. a
-        # global Playwright server), silently widening the tool surface.
-        strict_mcp_config=True,
+        allowed_tools=["Read", "Glob", "Grep"],
+        permission_mode="default",
         cwd=os.path.dirname(os.path.abspath(__file__)),
         max_turns=30,
         system_prompt=lambda ctx: (

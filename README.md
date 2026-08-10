@@ -159,10 +159,11 @@ clients unlock.
 
 ## Status & scope
 
-Early (`0.x`, protocol `0.1`) — APIs may still move. Implemented and tested:
-the full protocol surface, Claude Agent SDK adapter (API-key and subscription
-auth), React components. On the roadmap: file/image attachments,
-human-in-the-loop tool approval, event-log retention, additional backend
+Early (`0.x`, protocol `0.2`) — APIs may still move. Implemented and tested:
+the full protocol surface, human-in-the-loop tool approval (inline in the chat,
+indefinite hold, per-session allow memory, recorded in the event log), Claude
+Agent SDK adapter (API-key and subscription auth), React components. On the
+roadmap: file/image attachments, event-log retention, additional backend
 implementations.
 
 **Scope, stated plainly:** single process, single user, SQLite, no auth — by

@@ -13,6 +13,7 @@ export {
   ChatMessage,
   ChatItem,
   TypingIndicator,
+  PermissionPrompt,
   type ChatPanelProps,
   type ChatComponents,
   type ItemComponentProps,

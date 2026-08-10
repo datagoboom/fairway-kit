@@ -1,4 +1,4 @@
-# Agent Chat Protocol — draft v0.1
+# Agent Chat Protocol — draft v0.2
 
 *A wire + storage contract for integrating a streaming agent with an API backend and a live-chat UI. Distilled from five production implementations of this pattern, each of which fixed a different subset of the same recurring bugs. Server and client libraries implement this spec; apps extend it only through the declared extension points.*
 
@@ -45,6 +45,21 @@ Unknown `type` values MUST be passed through by transports and stores, and treat
 | `tool_call` | `id`, `tool`, `kind`, `label`, `detail?`, `input?` | Tool invocation started. `id` is the provider's tool-use id (unique within the job). `kind`/`label`/`detail` are **derived server-side** from the tool registry — clients MUST NOT maintain their own name→label maps (styling by `kind` is fine). |
 | `tool_result` | `id`, `ok` (bool), `summary?`, `detail?` | Tool finished. **Matched to `tool_call` by `id`**, never by "most recent undone." An unmatched `tool_result` folds to an orphan item (visible, flagged), not an error. |
 
+### Permissions (human-in-the-loop tool approval)
+| type | fields | semantics |
+|---|---|---|
+| `permission_request` | `id`, `tool`, `kind`, `label`, `detail?`, `input?` | The agent wants to run a tool that needs approval. The turn **holds indefinitely** until resolved — there is no timeout. `id` is unique within the job. Metadata is server-derived, same as `tool_call`. |
+| `permission_resolved` | `id`, `decision` | The user decided: `"allow"` (this call), `"allow_session"` (this call + auto-allow this tool for the rest of the session), or `"deny"`. Matched to `permission_request` by `id`. |
+
+**Session allow memory:** on `allow_session`, the server records the tool name
+against the session. Later requests for that tool in the same session are
+auto-allowed silently — no `permission_request` is emitted (the `tool_call`
+event still shows the action). The set persists across restarts with the
+session.
+
+**Stop interaction:** `POST /jobs/{id}/stop` resolves all pending permission
+requests as `deny` before interrupting, so a held turn can always be stopped.
+
 ### Terminal (exactly one per job, always last)
 | type | fields | semantics |
 |---|---|---|
@@ -76,7 +91,9 @@ fold(items, event) → items
 - `thinking` → same as `text`, into an open thinking item.
 - `tool_call` → close any open text/thinking item; push `{type:'tool', id, kind, label, detail, status:'running'}`.
 - `tool_result` → find item with matching `id`; set `status: ok ? 'ok' : 'err'`, attach `summary`/`detail`. No match → push orphan result item.
-- `done`/`error`/`cancelled` → close all open items; mark any still-`running` tool items `interrupted`; `error` additionally pushes an error item with `message`.
+- `permission_request` → close any open text/thinking item; push `{type:'permission', id, tool, kind, label, detail?, status:'pending'}`.
+- `permission_resolved` → find pending item with matching `id`; set `status` to `allowed` (decision `allow`/`allow_session`; record `scope:'session'` for the latter) or `denied`. No match → push orphan item.
+- `done`/`error`/`cancelled` → close all open items; mark any still-`running` tool items and still-`pending` permission items `interrupted`; `error` additionally pushes an error item with `message`.
 - unknown / `x_*` → push `{type:'opaque', event}` (apps may override rendering per type).
 
 **Idempotence requirement:** folding a full replay (deltas + `text_block`s) MUST yield the same items as having folded the live stream. This is what makes reconnect-from-zero safe and compaction (§6) invisible.
@@ -143,7 +160,8 @@ All under a mount prefix (default `/api/chat`). JSON bodies; errors are `{error:
 | `GET /jobs/{id}/stream` | `?since=` | SSE | replay-then-tail; `data: <json>\n\n`; heartbeat comments |
 | `GET /jobs/{id}/events` | `?since=` | `{events: [...], terminal: bool}` | non-streaming fetch of the same log (debugging, polling fallback) |
 | `POST /jobs/{id}/stop` | | `202 {status}` | §9 |
-| `GET /meta` | | `{protocol_version: "0.1", extensions: [...]}` | capability discovery |
+| `POST /jobs/{id}/permission` | `{request_id, decision}` | `200 {status}` | resolve a pending `permission_request`; `409` if unknown/already resolved |
+| `GET /meta` | | `{protocol_version: "0.2", extensions: [...]}` | capability discovery |
 
 Transport notes: SSE responses set `Cache-Control: no-cache`, `X-Accel-Buffering: no`. Clients use `fetch()` + stream reader (AbortController support); frames split on `\n\n`, `data:` lines JSON-parsed, comment lines skipped. A parse failure on one frame skips the frame, never kills the connection.
 
@@ -186,7 +204,6 @@ async def run(ctx: TurnContext, emit: Emit) -> TurnResult:
 
 ## Open questions for v0.2
 1. **Attachments/images** — upload endpoint + reference format in `send`.
-2. **HITL permission gate** — promote `permission_pending`/`permission_resolved` into core once the approval endpoint shape is settled.
-3. **Sub-agent delegation** — `delegate_event`/`task_status` as a core module (task table + transcript endpoint) vs staying `x_*`.
+2. **Sub-agent delegation** — `delegate_event`/`task_status` as a core module (task table + transcript endpoint) vs staying `x_*`.
 4. **Multi-client concurrency** — multiple tabs on one session: last-writer `send` wins via the 409 rule; do we need presence/typing?
 5. **Auth** — out of scope for v0.1 (all five source apps are single-user); define a pluggable principal on `ctx` before any multi-user use.

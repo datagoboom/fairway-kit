@@ -27,6 +27,18 @@ export interface ToolItem {
   result_detail?: string;
   orphan?: boolean;
 }
+export interface PermissionItem {
+  type: "permission";
+  id: string;
+  tool?: string;
+  kind?: string;
+  label?: string;
+  detail?: string;
+  status: "pending" | "allowed" | "denied" | "interrupted";
+  /** "session" when resolved with allow_session. */
+  scope?: "session";
+  orphan?: boolean;
+}
 export interface ErrorItem {
   type: "error";
   message: string;
@@ -35,7 +47,7 @@ export interface OpaqueItem {
   type: "opaque";
   event: ChatEvent;
 }
-export type StreamItem = TextItem | ToolItem | ErrorItem | OpaqueItem;
+export type StreamItem = TextItem | ToolItem | PermissionItem | ErrorItem | OpaqueItem;
 
 const TERMINAL = new Set(["done", "error", "cancelled"]);
 
@@ -100,10 +112,42 @@ export function fold(prev: readonly StreamItem[], ev: ChatEvent): StreamItem[] {
     return items;
   }
 
+  if (t === "permission_request") {
+    closeTrailing(items);
+    const e = ev as Extract<ChatEvent, { type: "permission_request" }>;
+    const item: PermissionItem = {
+      type: "permission",
+      id: e.id,
+      tool: e.tool,
+      kind: e.kind,
+      label: e.label,
+      status: "pending",
+    };
+    if (e.detail !== undefined) item.detail = e.detail;
+    items.push(item);
+    return items;
+  }
+
+  if (t === "permission_resolved") {
+    const e = ev as Extract<ChatEvent, { type: "permission_resolved" }>;
+    const status = e.decision === "deny" ? "denied" : "allowed";
+    for (let i = items.length - 1; i >= 0; i--) {
+      const it = items[i];
+      if (it.type === "permission" && it.id === e.id && it.status === "pending") {
+        it.status = status;
+        if (e.decision === "allow_session") it.scope = "session";
+        return items;
+      }
+    }
+    items.push({ type: "permission", id: e.id, status, orphan: true });
+    return items;
+  }
+
   if (TERMINAL.has(t)) {
     closeTrailing(items);
     for (const it of items) {
       if (it.type === "tool" && it.status === "running") it.status = "interrupted";
+      if (it.type === "permission" && it.status === "pending") it.status = "interrupted";
     }
     if (t === "error") {
       items.push({ type: "error", message: (ev as { message: string }).message });

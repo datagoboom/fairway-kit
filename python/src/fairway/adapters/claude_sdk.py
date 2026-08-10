@@ -123,6 +123,42 @@ class ClaudeSDKRunner:
                 env["CLAUDE_CODE_OAUTH_TOKEN"] = self.oauth_token
         return env
 
+    def _build_can_use_tool(self, ctx: TurnContext):
+        """Wire the protocol permission gate into the SDK's can_use_tool hook.
+
+        Only meaningful when permission_mode leaves decisions to the callback
+        ("default"/"acceptEdits"/"plan" — the SDK shadows it under
+        "bypassPermissions"/"dontAsk"). Tools listed in `allowed_tools` are
+        auto-approved by the SDK before the callback runs, which composes with
+        the gate: allowed_tools = pre-approved, everything else asks.
+        """
+        if ctx.request_permission is None or self.permission_mode in (
+            "bypassPermissions",
+            "dontAsk",
+        ):
+            return None
+        from claude_agent_sdk.types import PermissionResultAllow, PermissionResultDeny
+
+        request_permission = ctx.request_permission
+
+        async def can_use_tool(tool_name: str, input_data: dict[str, Any], _context: Any):
+            name = _strip_mcp_prefix(tool_name)
+            meta = self.tool_meta.get(name) or ToolMeta("unknown", name)
+            detail = None
+            if meta.detail is not None and isinstance(input_data, dict):
+                try:
+                    detail = meta.detail(input_data)
+                except Exception:  # noqa: BLE001 — detail is cosmetic
+                    detail = None
+            decision = await request_permission(
+                tool=name, kind=meta.kind, label=meta.label, detail=detail, input=input_data
+            )
+            if decision in ("allow", "allow_session"):
+                return PermissionResultAllow()
+            return PermissionResultDeny(message="The user denied permission for this tool call.")
+
+        return can_use_tool
+
     async def __call__(self, ctx: TurnContext, emit: Emit) -> TurnResult:
         from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient
         from claude_agent_sdk.types import (
@@ -136,6 +172,7 @@ class ClaudeSDKRunner:
             UserMessage,
         )
 
+        can_use_tool = self._build_can_use_tool(ctx)
         options = ClaudeAgentOptions(
             model=self.model,
             tools=self.tools,
@@ -149,6 +186,7 @@ class ClaudeSDKRunner:
             resume=ctx.provider_session_id,
             include_partial_messages=True,  # StreamEvent deltas for live typing
             env=self.build_env(),
+            can_use_tool=can_use_tool,
         )
 
         prompt = self._build_prompt(ctx)

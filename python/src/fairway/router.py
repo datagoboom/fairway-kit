@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
@@ -24,6 +24,11 @@ class SendBody(BaseModel):
 
 class CreateSessionBody(BaseModel):
     name: str | None = None
+
+
+class PermissionBody(BaseModel):
+    request_id: str
+    decision: Literal["allow", "allow_session", "deny"]
 
 
 def build_router(store: Store, registry: JobRegistry, runner: Runner) -> APIRouter:
@@ -118,6 +123,14 @@ def build_router(store: Store, registry: JobRegistry, runner: Runner) -> APIRout
         if not await store.get_job(job_id):
             raise HTTPException(404, "job not found")
         return {"status": await registry.stop(job_id)}
+
+    @r.post("/jobs/{job_id}/permission")
+    async def permission(job_id: str, body: PermissionBody) -> dict[str, Any]:
+        if not await store.get_job(job_id):
+            raise HTTPException(404, "job not found")
+        if not registry.resolve_permission(job_id, body.request_id, body.decision):
+            raise HTTPException(409, "no such pending permission request")
+        return {"status": "resolved"}
 
     return r
 

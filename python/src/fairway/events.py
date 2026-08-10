@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-PROTOCOL_VERSION = "0.1"
+PROTOCOL_VERSION = "0.2"
 
 CORE_TYPES = frozenset(
     {
@@ -19,11 +19,15 @@ CORE_TYPES = frozenset(
         "thinking",
         "tool_call",
         "tool_result",
+        "permission_request",
+        "permission_resolved",
         "done",
         "error",
         "cancelled",
     }
 )
+
+PERMISSION_DECISIONS = frozenset({"allow", "allow_session", "deny"})
 TERMINAL_TYPES = frozenset({"done", "error", "cancelled"})
 
 Event = dict[str, Any]
@@ -70,6 +74,26 @@ def tool_result(id: str, ok: bool, summary: str | None = None, detail: str | Non
     return ev
 
 
+def permission_request(
+    id: str,
+    tool: str,
+    kind: str,
+    label: str,
+    detail: str | None = None,
+    input: dict[str, Any] | None = None,
+) -> Event:
+    ev: Event = {"type": "permission_request", "id": id, "tool": tool, "kind": kind, "label": label}
+    if detail is not None:
+        ev["detail"] = detail
+    if input is not None:
+        ev["input"] = input
+    return ev
+
+
+def permission_resolved(id: str, decision: str) -> Event:
+    return {"type": "permission_resolved", "id": id, "decision": decision}
+
+
 def done(message_id: str, reason: str | None = None) -> Event:
     ev: Event = {"type": "done", "message_id": message_id}
     if reason is not None:
@@ -107,6 +131,14 @@ def validate(ev: Event) -> None:
         raise ValueError(f"tool_call missing id/tool/kind/label: {ev!r}")
     if t == "tool_result" and (not isinstance(ev.get("id"), str) or not isinstance(ev.get("ok"), bool)):
         raise ValueError(f"tool_result missing id/ok: {ev!r}")
+    if t == "permission_request" and not all(
+        isinstance(ev.get(k), str) for k in ("id", "tool", "kind", "label")
+    ):
+        raise ValueError(f"permission_request missing id/tool/kind/label: {ev!r}")
+    if t == "permission_resolved" and (
+        not isinstance(ev.get("id"), str) or ev.get("decision") not in PERMISSION_DECISIONS
+    ):
+        raise ValueError(f"permission_resolved missing id/decision: {ev!r}")
     if t == "done" and not isinstance(ev.get("message_id"), str):
         raise ValueError(f"done missing message_id: {ev!r}")
     if t == "error" and not isinstance(ev.get("message"), str):
