@@ -24,8 +24,6 @@ If you've built an agent chat app before, some of this will sound familiar:
 - Stopping a response needs dueling client/server timeouts, and killing the
   server mid-turn strands jobs in a running state.
 
-fairway is those bugs, fixed once, behind a small API.
-
 ## How it works
 
 ```
