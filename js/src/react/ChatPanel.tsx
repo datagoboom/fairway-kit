@@ -5,7 +5,7 @@
  * per-item-type components that can be overridden or nulled out.
  *
  * Headless: no visual styling beyond layout; every element carries stable
- * data-* attributes for CSS. Import "@fairway/client/react/styles.css" for a
+ * data-* attributes for CSS. Import "fairway-kit/react/styles.css" for a
  * ready-made look, or style [data-fairway-*] yourself.
  */
 

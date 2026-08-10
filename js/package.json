@@ -1,5 +1,5 @@
 {
-  "name": "@fairway/client",
+  "name": "fairway-kit",
   "version": "0.1.0",
   "description": "Dev kit frontend for local agent-backed apps: resumable SSE streaming, event fold, headless React chat components",
   "license": "MIT",

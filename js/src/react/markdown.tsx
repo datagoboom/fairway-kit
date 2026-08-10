@@ -1,8 +1,8 @@
 /**
  * Opt-in markdown Text renderer — subpath export so react-markdown is only
- * pulled in by apps that import "@fairway/client/react/markdown".
+ * pulled in by apps that import "fairway-kit/react/markdown".
  *
- *   import { MarkdownText } from "@fairway/client/react/markdown";
+ *   import { MarkdownText } from "fairway-kit/react/markdown";
  *   <ChatPanel components={{ Text: MarkdownText }} />
  *
  * Requires peer deps: react-markdown, remark-gfm.

@@ -32,7 +32,7 @@ import {
   createTheme,
 } from "@mui/material";
 import { Check, Minus, Plus, SendHorizontal, Square, X } from "lucide-react";
-import { AgentChatClient, type Session } from "@fairway/client";
+import { AgentChatClient, type Session } from "fairway-kit";
 import {
   ChatItem,
   ChatPanel,
@@ -41,9 +41,9 @@ import {
   type ChatComponents,
   type ChatRow,
   type ItemComponentProps,
-} from "@fairway/client/react";
-import { MarkdownText } from "@fairway/client/react/markdown";
-import type { ErrorItem, TextItem, ToolItem } from "@fairway/client";
+} from "fairway-kit/react";
+import { MarkdownText } from "fairway-kit/react/markdown";
+import type { ErrorItem, TextItem, ToolItem } from "fairway-kit";
 
 const client = new AgentChatClient("/api/chat");
 

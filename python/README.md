@@ -21,6 +21,6 @@ seq-cursor replay, active-job reattach, server-owned stop, and restart-safe
 job recovery. Any agent can drive it — a runner is just an async callable that
 emits protocol events.
 
-Pairs with [`@fairway/client`](https://github.com/datagoboom/fairway/tree/main/js)
+Pairs with [`fairway-kit`](https://github.com/datagoboom/fairway/tree/main/js)
 on the frontend. Full docs, the wire protocol, and a complete example app live
 in the [repository](https://github.com/datagoboom/fairway).

@@ -64,7 +64,7 @@ a refresh is byte-for-byte what you saw streaming.
 | Package | What it is |
 |---|---|
 | `fairway` (Python) | FastAPI router factory, SQLite-backed event log + job registry, runner interface, Claude Agent SDK adapter |
-| `@fairway/client` (TypeScript) | SSE stream client with seq resume, the fold, typed REST client, React hook + headless components |
+| `fairway-kit` (TypeScript) | SSE stream client with seq resume, the fold, typed REST client, React hook + headless components |
 | [`PROTOCOL.md`](PROTOCOL.md) | The versioned wire + storage contract both packages implement |
 
 Not yet published to PyPI/npm — consume from source for now (see the example app).
@@ -114,9 +114,9 @@ you — a runner only emits.
 ## Frontend quickstart
 
 ```tsx
-import { AgentChatClient } from "@fairway/client";
-import { ChatProvider, ChatPanel, ChatInput } from "@fairway/client/react";
-import "@fairway/client/react/styles.css";   // optional default look
+import { AgentChatClient } from "fairway-kit";
+import { ChatProvider, ChatPanel, ChatInput } from "fairway-kit/react";
+import "fairway-kit/react/styles.css";   // optional default look
 
 const client = new AgentChatClient("/api/chat");
 
@@ -141,7 +141,7 @@ automatic reattach to in-flight responses on mount/refresh, and stop.
 stylesheet, restyle via CSS, or replace rendering entirely:
 
 - Per-item-type overrides: `<ChatPanel components={{ Text: MarkdownText, Tool: MyChip }} />`
-  (markdown renderer available at `@fairway/client/react/markdown`; keys also
+  (markdown renderer available at `fairway-kit/react/markdown`; keys also
   accept protocol extension event types).
 - Full bubble control via render prop: `<ChatPanel>{(row) => <MyBubble row={row} />}</ChatPanel>`.
 - Or drop the components and build on `useAgentChat` / `useChatContext` —

@@ -1,5 +1,5 @@
 /* Optional default look for the fairway chat components.
- * Import from your app:  import "@fairway/client/react/styles.css";
+ * Import from your app:  import "fairway-kit/react/styles.css";
  * Everything targets the stable data-* attributes, so overriding any part of
  * it from app CSS needs no extra specificity tricks. Colors derive from a few
  * custom properties — retheme by redefining them on any ancestor. */

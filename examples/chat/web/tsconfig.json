@@ -9,9 +9,9 @@
     "noEmit": true,
     "skipLibCheck": true,
     "paths": {
-      "@fairway/client/react/markdown": ["../../../js/src/react/markdown.tsx"],
-      "@fairway/client/react": ["../../../js/src/react/index.ts"],
-      "@fairway/client": ["../../../js/src/index.ts"]
+      "fairway-kit/react/markdown": ["../../../js/src/react/markdown.tsx"],
+      "fairway-kit/react": ["../../../js/src/react/index.ts"],
+      "fairway-kit": ["../../../js/src/index.ts"]
     }
   },
   "include": ["src", "../../../js/src"]

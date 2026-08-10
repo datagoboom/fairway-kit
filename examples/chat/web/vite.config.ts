@@ -8,10 +8,10 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@fairway/client/react/styles.css": path.resolve(__dirname, "../../../js/src/react/styles.css"),
-      "@fairway/client/react/markdown": path.resolve(__dirname, "../../../js/src/react/markdown.tsx"),
-      "@fairway/client/react": path.resolve(__dirname, "../../../js/src/react/index.ts"),
-      "@fairway/client": path.resolve(__dirname, "../../../js/src/index.ts"),
+      "fairway-kit/react/styles.css": path.resolve(__dirname, "../../../js/src/react/styles.css"),
+      "fairway-kit/react/markdown": path.resolve(__dirname, "../../../js/src/react/markdown.tsx"),
+      "fairway-kit/react": path.resolve(__dirname, "../../../js/src/react/index.ts"),
+      "fairway-kit": path.resolve(__dirname, "../../../js/src/index.ts"),
     },
   },
   server: {
