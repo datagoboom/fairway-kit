@@ -1,6 +1,7 @@
 """fairway — dev kit backend for local agent-backed apps (see PROTOCOL.md)."""
 
 from . import events
+from .backends import Backend, MySQLBackend, PostgresBackend, SQLiteBackend, backend_from_url
 from .events import PROTOCOL_VERSION, TERMINAL_TYPES
 from .fold import fold, fold_all
 from .jobs import JobRegistry
@@ -21,4 +22,9 @@ __all__ = [
     "TurnContext",
     "TurnResult",
     "Store",
+    "Backend",
+    "backend_from_url",
+    "SQLiteBackend",
+    "PostgresBackend",
+    "MySQLBackend",
 ]

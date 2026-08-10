@@ -10,11 +10,35 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run: { working-directory: python }
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: fairway
+          POSTGRES_DB: fairway
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: fairway
+          MYSQL_DATABASE: fairway
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -pfairway"
+          --health-interval 10s --health-timeout 5s --health-retries 10
+    env:
+      # The backend conformance suite runs against these when set; unset, it
+      # falls back to SQLite-only (so local runs need no services).
+      FAIRWAY_TEST_POSTGRES_URL: postgresql://postgres:fairway@localhost:5432/fairway
+      FAIRWAY_TEST_MYSQL_URL: mysql://root:fairway@localhost:3306/fairway
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
         with: { python-version: "3.12" }
-      - run: uv sync
+      - run: uv sync --extra postgres --extra mysql
       - run: uv run pytest -q
 
   frontend:

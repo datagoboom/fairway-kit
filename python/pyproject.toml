@@ -24,6 +24,9 @@ dependencies = [
 
 [project.optional-dependencies]
 claude = ["claude-agent-sdk>=0.2"]
+postgres = ["asyncpg>=0.29"]
+# cryptography is needed for MySQL 8's default caching_sha2_password auth.
+mysql = ["aiomysql>=0.2", "cryptography>=41"]
 
 [project.urls]
 Homepage = "https://github.com/datagoboom/fairway-kit"

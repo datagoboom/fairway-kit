@@ -210,7 +210,8 @@ def build_router(
 def mount_agent_chat(
     app: FastAPI,
     *,
-    db_path: str,
+    db_url: str | None = None,
+    db_path: str | None = None,
     runner: Runner,
     prefix: str = "/api/chat",
     retention_days: float | None = 7.0,
@@ -219,21 +220,34 @@ def mount_agent_chat(
 ) -> tuple[Store, JobRegistry]:
     """One-call integration: opens the store, runs the startup sweep, mounts routes.
 
+    db_url: the database. A bare path or ``sqlite:///path.db`` uses SQLite (the
+    default, zero extra deps); ``postgresql://…`` needs ``fairway-kit[postgres]``
+    and ``mysql://…`` needs ``fairway-kit[mysql]``. db_path is a backward-compat
+    alias for a SQLite path. fairway is single-writer regardless of backend — the
+    database is a storage choice, not a way to run multiple processes.
+
     retention_days: on startup, drop event logs of terminal jobs older than
     this (their finalized events_json on the message is the durable copy).
     None disables pruning. flush_interval: minimum seconds between mid-turn
     assistant-row flushes (0 = flush on every event; raise under heavy load).
-    attachments_dir: where uploaded files land; defaults to a directory next to
-    the database (<db>-attachments). Pass explicitly to relocate it.
+    attachments_dir: where uploaded files land (always local disk, independent
+    of the database). Defaults next to a SQLite file, or ./fairway-attachments
+    for a networked database.
 
     Returns (store, registry) so apps can register graceful-stop hooks, extension
     emitters, etc.
     """
-    store = Store(db_path)
+    target = db_url or db_path
+    if not target:
+        raise ValueError("mount_agent_chat needs db_url (or db_path for SQLite)")
+    store = Store(target)
     registry = JobRegistry(store, flush_interval=flush_interval)
     if attachments_dir is None:
-        p = Path(db_path)
-        attachments_dir = p.parent / f"{p.stem}-attachments"
+        if store.backend.dialect == "sqlite" and "://" not in target:
+            p = Path(target)
+            attachments_dir = p.parent / f"{p.stem}-attachments"
+        else:
+            attachments_dir = Path.cwd() / "fairway-attachments"
     attachments_path = Path(attachments_dir)
 
     # Wrap the app's lifespan rather than using deprecated on_event hooks, so

@@ -106,7 +106,8 @@ app.add_middleware(
 
 store, registry = mount_agent_chat(
     app,
-    db_path=os.environ.get("FAIRWAY_DB", str(HERE / "fairway-example.db")),
+    # FAIRWAY_DB accepts a SQLite path or a postgresql:// / mysql:// URL.
+    db_url=os.environ.get("FAIRWAY_DB", str(HERE / "fairway-example.db")),
     runner=runner,
 )
 

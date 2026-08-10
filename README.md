@@ -89,6 +89,25 @@ That one call mounts the whole HTTP surface: sessions, send, SSE streaming
 with replay, active-job reattach, server-owned stop escalation, and the
 startup sweep.
 
+### Storage backends
+
+The default is a SQLite file, with zero extra dependencies. If you already run
+Postgres or MySQL for the rest of your app and would rather not have a stray
+SQLite file, pass a database URL instead:
+
+```python
+mount_agent_chat(app, db_url="postgresql://user:pass@localhost/mydb", runner=...)   # pip install "fairway-kit[postgres]"
+mount_agent_chat(app, db_url="mysql://user:pass@localhost/mydb", runner=...)         # pip install "fairway-kit[mysql]"
+mount_agent_chat(app, db_url="sqlite:///./chat.db", runner=...)                      # the default
+```
+
+This is a storage choice, not a scaling story. fairway is single-writer on
+every backend: one process, one logical writer. It does not become a
+multi-process system by pointing several workers at the same Postgres, because
+a job's live stream, its permission gate, and its stop hook all live in the
+memory of the process that started the turn. Use the database you already have;
+don't reach for one expecting horizontal scale.
+
 The Claude Agent SDK adapter is included, but a runner is just an async
 callable. Wrap any SDK or a raw LLM loop:
 
