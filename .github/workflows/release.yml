@@ -1,14 +1,24 @@
 name: release
 
-# On a v* tag, publishes whichever packages match the tag version. No stored
-# secrets: PyPI and npm both use OIDC trusted publishing. The Python and JS
-# sides version independently — a tag publishes the JS packages when they match
-# it and PyPI when python matches, so a JS-only release skips PyPI and vice
-# versa. See docs/RELEASING.md (local) for the one-time trusted-publisher setup.
+# Package-prefixed tags. Each package versions independently and releases on its
+# own tag, so there is no shared version namespace to collide in:
+#
+#   js-v<version>      -> @fairway-kit/protocol + @fairway-kit/client (released together)
+#   agent-v<version>   -> @fairway-kit/agent
+#   server-v<version>  -> @fairway-kit/server
+#   py-v<version>      -> fairway-kit on PyPI
+#
+# The tag's version must equal the matching package's declared version, or the
+# run fails fast. No stored secrets: PyPI and npm both use OIDC trusted
+# publishing. See docs/RELEASING.md (local) for the one-time setup.
 
 on:
   push:
-    tags: ["v*"]
+    tags:
+      - "js-v*"
+      - "agent-v*"
+      - "server-v*"
+      - "py-v*"
 
 jobs:
   versions:
@@ -21,28 +31,41 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: check
-        name: Decide which packages this tag releases
+        name: Decide which package this tag releases
         run: |
-          TAG="${GITHUB_REF_NAME#v}"
+          KIND="${GITHUB_REF_NAME%%-v*}"   # js | agent | server | py
+          VER="${GITHUB_REF_NAME#*-v}"     # 0.2.0
           PY=$(grep -m1 '^version = ' python/pyproject.toml | cut -d'"' -f2)
           PROTO=$(node -p "require('./js/packages/protocol/package.json').version")
           CLIENT=$(node -p "require('./js/packages/client/package.json').version")
           AGENT=$(node -p "require('./js/packages/agent/package.json').version")
           SERVER=$(node -p "require('./js/packages/server/package.json').version")
-          echo "tag=$TAG python=$PY protocol=$PROTO client=$CLIENT agent=$AGENT server=$SERVER"
-          # protocol + client release together and must share the tag version
-          # (client depends on protocol at an exact version). agent and server
-          # version independently, each releasing on its own matching tag.
-          if [ "$PROTO" = "$TAG" ] && [ "$CLIENT" = "$TAG" ]; then
-            echo "publish_js=true" >> "$GITHUB_OUTPUT"
-          elif [ "$PROTO" = "$TAG" ] || [ "$CLIENT" = "$TAG" ]; then
-            echo "JS packages disagree with the tag" >&2; exit 1
-          else
-            echo "publish_js=false" >> "$GITHUB_OUTPUT"
-          fi
-          echo "publish_agent=$([ "$AGENT" = "$TAG" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-          echo "publish_server=$([ "$SERVER" = "$TAG" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-          echo "publish_py=$([ "$PY" = "$TAG" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "kind=$KIND ver=$VER python=$PY protocol=$PROTO client=$CLIENT agent=$AGENT server=$SERVER"
+          # Default everything off; the matching branch turns exactly one on and
+          # asserts the tag version equals the package's declared version.
+          echo "publish_js=false" >> "$GITHUB_OUTPUT"
+          echo "publish_agent=false" >> "$GITHUB_OUTPUT"
+          echo "publish_server=false" >> "$GITHUB_OUTPUT"
+          echo "publish_py=false" >> "$GITHUB_OUTPUT"
+          case "$KIND" in
+            js)
+              # protocol + client release together (client depends on protocol
+              # at an exact version), so both must equal the tag.
+              [ "$PROTO" = "$VER" ] && [ "$CLIENT" = "$VER" ] || {
+                echo "js-v$VER but protocol=$PROTO client=$CLIENT" >&2; exit 1; }
+              echo "publish_js=true" >> "$GITHUB_OUTPUT" ;;
+            agent)
+              [ "$AGENT" = "$VER" ] || { echo "agent-v$VER but agent=$AGENT" >&2; exit 1; }
+              echo "publish_agent=true" >> "$GITHUB_OUTPUT" ;;
+            server)
+              [ "$SERVER" = "$VER" ] || { echo "server-v$VER but server=$SERVER" >&2; exit 1; }
+              echo "publish_server=true" >> "$GITHUB_OUTPUT" ;;
+            py)
+              [ "$PY" = "$VER" ] || { echo "py-v$VER but python=$PY" >&2; exit 1; }
+              echo "publish_py=true" >> "$GITHUB_OUTPUT" ;;
+            *)
+              echo "unrecognized tag $GITHUB_REF_NAME" >&2; exit 1 ;;
+          esac
 
   test-backend:
     runs-on: ubuntu-latest
