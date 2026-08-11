@@ -10,7 +10,7 @@ import { randomUUID } from "node:crypto";
 import { extname, join, resolve } from "node:path";
 import { PROTOCOL_VERSION } from "@fairway-kit/protocol";
 import type { JobRegistry } from "./jobs.js";
-import type { Runner, TurnContext } from "./types.js";
+import type { Runner, TurnContext } from "@fairway-kit/agent";
 import type { Store } from "./store.js";
 
 const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;

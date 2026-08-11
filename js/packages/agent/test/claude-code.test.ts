@@ -1,9 +1,10 @@
-/** Claude adapter mapping, driven by a fake queryFn (no SDK, no credentials).
- * Verifies SDK-message -> protocol-event translation, delta coalescing, the
- * session-id round-trip, the permission gate, and error propagation. */
+/** Claude Code adapter mapping, driven by a fake queryFn (no SDK, no
+ * credentials). Verifies SDK-message -> AgentEvent -> protocol-event
+ * translation, delta coalescing, the session-id round-trip, the permission
+ * gate, and error propagation. */
 
 import { describe, expect, it } from "vitest";
-import { claudeSDKRunner, DEFAULT_TOOL_META, type SdkMessage } from "../src/adapters/claude.js";
+import { claudeCodeRunner, DEFAULT_TOOL_META, type SdkMessage } from "../src/adapters/claude-code.js";
 import type { Emit, StampedEvent, TurnContext } from "../src/index.js";
 
 function harness(overrides: Partial<TurnContext> = {}) {
@@ -33,7 +34,7 @@ const fakeQuery = (msgs: SdkMessage[]) => async function* () {
   for (const m of msgs) yield m;
 };
 
-describe("claude adapter", () => {
+describe("claude-code adapter", () => {
   it("maps deltas, text_block, tool_use, tool_result, and the session id", async () => {
     const msgs: SdkMessage[] = [
       { type: "stream_event", event: { type: "content_block_delta", delta: { type: "text_delta", text: "Hel" } } },
@@ -44,8 +45,7 @@ describe("claude adapter", () => {
       { type: "result", subtype: "success", result: "Hello", session_id: "sess-123" },
     ];
     const { ctx, emit, emitted } = harness();
-    const runner = claudeSDKRunner({ queryFn: fakeQuery(msgs) as never });
-    const result = await runner(ctx, emit);
+    const result = await claudeCodeRunner({ queryFn: fakeQuery(msgs) as never })(ctx, emit);
 
     const byType = emitted.map((e) => e.type);
     expect(byType).toContain("text"); // coalesced deltas
@@ -74,8 +74,7 @@ describe("claude adapter", () => {
         return "deny";
       },
     });
-    const runner = claudeSDKRunner({ queryFn: queryFn as never });
-    await runner(ctx, emit);
+    await claudeCodeRunner({ queryFn: queryFn as never })(ctx, emit);
     expect(decisions).toEqual(["Bash"]);
     expect(capturedResult).toEqual({
       behavior: "deny",
@@ -90,16 +89,32 @@ describe("claude adapter", () => {
       yield { type: "result", subtype: "success", result: "", session_id: "s" } as SdkMessage;
     };
     const { ctx, emit } = harness({ requestPermission: async () => "allow" });
-    await claudeSDKRunner({ queryFn: queryFn as never, permissionMode: "bypassPermissions" })(ctx, emit);
+    await claudeCodeRunner({ queryFn: queryFn as never, permissionMode: "bypassPermissions" })(ctx, emit);
     expect(hadCallback).toBe(false);
   });
 
-  it("throws on an error result", async () => {
-    const msgs: SdkMessage[] = [
-      { type: "result", subtype: "error_max_turns", session_id: "s" },
-    ];
+  it("passes allowed/disallowed tool sets through to the SDK options", async () => {
+    let opts: Record<string, unknown> | undefined;
+    const queryFn = async function* (args: { options: Record<string, unknown> }) {
+      opts = args.options;
+      yield { type: "result", subtype: "success", result: "", session_id: "s" } as SdkMessage;
+    };
     const { ctx, emit } = harness();
-    await expect(claudeSDKRunner({ queryFn: fakeQuery(msgs) as never })(ctx, emit)).rejects.toThrow(
+    await claudeCodeRunner({
+      queryFn: queryFn as never,
+      allowedTools: ["Read"],
+      disallowedTools: ["Bash", "Write"],
+      maxTurns: 7,
+    })(ctx, emit);
+    expect(opts?.allowedTools).toEqual(["Read"]);
+    expect(opts?.disallowedTools).toEqual(["Bash", "Write"]);
+    expect(opts?.maxTurns).toBe(7);
+  });
+
+  it("throws on an error result", async () => {
+    const msgs: SdkMessage[] = [{ type: "result", subtype: "error_max_turns", session_id: "s" }];
+    const { ctx, emit } = harness();
+    await expect(claudeCodeRunner({ queryFn: fakeQuery(msgs) as never })(ctx, emit)).rejects.toThrow(
       /error_max_turns/,
     );
   });
@@ -110,19 +125,17 @@ describe("claude adapter", () => {
       prompt = args.prompt;
       yield { type: "result", subtype: "success", result: "", session_id: "s" } as SdkMessage;
     };
-    // No providerSessionId + prior messages -> history injected.
     const h1 = harness({
       messages: [
         { id: "m1", session_id: "s1", role: "user", content: "earlier", events: null, streaming: false, created_at: "t" },
       ],
     });
-    await claudeSDKRunner({ queryFn: queryFn as never })(h1.ctx, h1.emit);
+    await claudeCodeRunner({ queryFn: queryFn as never })(h1.ctx, h1.emit);
     expect(String(prompt)).toContain("conversation_history");
     expect(String(prompt)).toContain("earlier");
 
-    // With a resume token -> no history block (SDK resume carries continuity).
     const h2 = harness({ providerSessionId: "sess", messages: h1.ctx.messages });
-    await claudeSDKRunner({ queryFn: queryFn as never })(h2.ctx, h2.emit);
+    await claudeCodeRunner({ queryFn: queryFn as never })(h2.ctx, h2.emit);
     expect(String(prompt)).not.toContain("conversation_history");
   });
 

@@ -9,16 +9,17 @@
  *
  * Single-writer, SQLite by default; Postgres (postgres://, needs `pg`) and
  * MySQL (mysql://, needs `mysql2`) are drop-in via the db URL. A runner is any
- * async (ctx, emit) => TurnResult — use the ClaudeSDKRunner adapter, or drive
- * it with any agent you like.
+ * async (ctx, emit) => TurnResult — build one with @fairway-kit/agent (or use
+ * its claudeCodeRunner adapter), or drive it with any agent you like.
  */
 
 import http from "node:http";
 import { dirname, join, resolve } from "node:path";
+import type { Runner } from "@fairway-kit/agent";
 import { createHandler } from "./router.js";
 import { JobRegistry } from "./jobs.js";
 import { Store } from "./store.js";
-import type { Backend, Runner } from "./types.js";
+import type { Backend } from "./types.js";
 
 export interface CreateAgentChatOptions {
   runner: Runner;
@@ -102,23 +103,16 @@ function defaultAttachmentsDir(dbTarget: string | undefined): string {
   return resolve("fairway-attachments");
 }
 
-/** Trivial runner for demos and tests: echoes the user message with one fake
- * tool call. Exercises the whole protocol path with no credentials. */
-export const EchoRunner: Runner = async (ctx, emit) => {
-  await emit({ type: "tool_call", id: "echo-1", tool: "echo", kind: "system", label: "Echo", detail: ctx.userContent.slice(0, 60) });
-  await emit({ type: "tool_result", id: "echo-1", ok: true, summary: "ok" });
-  const reply = `You said: ${ctx.userContent}`;
-  for (const word of reply.split(" ")) await emit({ type: "text", content: word + " " });
-  await emit({ type: "text_block", content: reply });
-  return { content: reply };
-};
-
 export { Store } from "./store.js";
 export { JobRegistry, compactableDeltaSeqs } from "./jobs.js";
 export { SQLiteBackend, PostgresBackend, MySQLBackend, backendFromUrl } from "./backends/index.js";
-export * as events from "./events.js";
+export type { Backend } from "./types.js";
+
+// The Runner contract, event constructors, and the reference EchoRunner live in
+// @fairway-kit/agent; re-export the essentials so a server user has them without
+// a second import. Build runners (or reach for an adapter) from there.
+export { EchoRunner, events } from "@fairway-kit/agent";
 export type {
-  Backend,
   Runner,
   TurnContext,
   TurnResult,
@@ -127,4 +121,4 @@ export type {
   StampedEvent,
   PermissionRequest,
   PermissionOutcome,
-} from "./types.js";
+} from "@fairway-kit/agent";

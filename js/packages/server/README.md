@@ -29,30 +29,25 @@ app.use(async (req, res, next) => {
 
 ## Runners
 
-A runner is any `async (ctx, emit) => TurnResult`. Emit protocol events as the
-turn progresses; the registry persists each one before fan-out, so live
-streaming and replay are byte-identical and a refresh reattaches to an in-flight
-response. `EchoRunner` exercises the whole path with no credentials.
-
-The bundled Claude adapter drives a turn with the
-[Claude Agent SDK](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk)
-(an optional peer dependency — install it to use the adapter):
+A runner is any `async (ctx, emit) => TurnResult` — the integration seam.
+`createAgentChat` invokes it; it never dictates how one is built, so you can plug
+in any agent. Runners, the toolkit for building them, and the bundled adapters
+live in [`@fairway-kit/agent`](https://www.npmjs.com/package/@fairway-kit/agent).
+`EchoRunner` (re-exported here for convenience) exercises the whole path with no
+credentials.
 
 ```ts
-import { claudeSDKRunner } from "@fairway-kit/server/claude";
+import { createAgentChat } from "@fairway-kit/server";
+import { claudeCodeRunner } from "@fairway-kit/agent/claude-code";
 
 const chat = createAgentChat({
   dbUrl: "./chat.db",
-  runner: claudeSDKRunner({ model: "claude-opus-4-8", auth: "api" }),
+  runner: claudeCodeRunner({ model: "claude-opus-4-8", auth: "api" }),
 });
 ```
 
-It maps SDK messages to protocol events (coalesced text/thinking deltas,
-authoritative text blocks, tool calls and results), rounds the provider session
-id back through `resume` for continuity, wires the human-in-the-loop permission
-gate into the SDK's `canUseTool`, and interrupts the live turn on stop. Auth
-modes: `"api"` (per-token via `ANTHROPIC_API_KEY`), `"subscription"` (the CLI's
-stored login, optionally a `claude setup-token` token), or `"inherit"`.
+See `@fairway-kit/agent` for the Runner contract, the `runnerFromStream` pump for
+writing your own adapter in ~30 lines, and the permission-gate helpers.
 
 ## Storage
 

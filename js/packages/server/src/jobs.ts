@@ -9,9 +9,9 @@
  * terminal event (PROTOCOL.md 4.4). */
 
 import { foldAll, isTerminal } from "@fairway-kit/protocol";
-import * as E from "./events.js";
+import { events as E } from "@fairway-kit/agent";
+import type { Emit, PermissionOutcome, Runner, StampedEvent, TurnContext } from "@fairway-kit/agent";
 import { finalText, Store } from "./store.js";
-import type { Emit, PermissionOutcome, Runner, StampedEvent, TurnContext } from "./types.js";
 
 const HEARTBEAT_MS = 20_000;
 const STOP_GRACE_MS = 5_000;

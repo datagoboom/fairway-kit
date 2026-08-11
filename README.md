@@ -62,6 +62,8 @@ The guarantees:
 | Package | What it is |
 |---|---|
 | `fairway-kit` on PyPI (`import fairway`) | FastAPI router factory, event log and job registry (SQLite, Postgres, or MySQL), runner interface, Claude Agent SDK adapter |
+| `@fairway-kit/server` on npm | The Node backend: event log and job registry (SQLite, Postgres, or MySQL), attachments, framework-agnostic HTTP handler |
+| `@fairway-kit/agent` on npm | The agent integration layer: the Runner contract, the `runnerFromStream` adapter toolkit, and bundled adapters (Claude Code, …) |
 | `@fairway-kit/client` on npm | SSE stream client with seq resume, typed REST client, React hook and headless components |
 | `@fairway-kit/protocol` on npm | The wire protocol: event types and the normative fold, shared by clients and servers (a dependency of the client) |
 

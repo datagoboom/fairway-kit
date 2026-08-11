@@ -6,7 +6,8 @@
 import { randomUUID } from "node:crypto";
 import { foldAll, type StreamItem } from "@fairway-kit/protocol";
 import { backendFromUrl } from "./backends/index.js";
-import { Mutex, type Backend, type Message, type StampedEvent } from "./types.js";
+import type { Message, StampedEvent } from "@fairway-kit/agent";
+import { Mutex, type Backend } from "./types.js";
 
 const now = () => new Date().toISOString();
 const newId = () => randomUUID().replace(/-/g, "");
