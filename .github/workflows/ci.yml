@@ -103,9 +103,15 @@ jobs:
           cache: npm
           cache-dependency-path: |
             examples/chat/web/package-lock.json
+            examples/chat/server/package-lock.json
             js/package-lock.json
       # The example consumes the lib from source via aliases, so the lib's
       # deps (react types, react-markdown, better-sqlite3) must be installed too.
       - run: npm ci --prefix ../../../js
       - run: npm ci
       - run: npx tsc -p tsconfig.json --noEmit          # web
+      - name: typecheck node server (consumes @fairway-kit/{server,agent} from source)
+        working-directory: examples/chat/server
+        run: |
+          npm ci
+          npx tsc -p tsconfig.json --noEmit

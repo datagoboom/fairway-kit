@@ -12,5 +12,6 @@ dist/
 
 # internal docs (kept local for now)
 /docs/
-examples/chat/fairway-example-settings.json
-examples/chat/fairway-example-attachments/
+# example runtime artifacts (Python server at examples/chat, Node at examples/chat/server)
+fairway-example-settings.json
+fairway-example-attachments/

@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@fairway-kit/server": ["../../../js/packages/server/src/index.ts"],
+      "@fairway-kit/agent": ["../../../js/packages/agent/src/index.ts"],
+      "@fairway-kit/agent/claude-code": ["../../../js/packages/agent/src/adapters/claude-code.ts"],
+      "@fairway-kit/protocol": ["../../../js/packages/protocol/src/index.ts"]
+    }
+  },
+  "include": ["server.ts"]
+}
