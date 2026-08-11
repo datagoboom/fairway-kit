@@ -93,6 +93,24 @@ async def test_messages_and_attachments(store):
     assert got["content"] == "hi"
 
 
+async def test_messages_ordered_by_insertion(store, monkeypatch):
+    """Messages return in insertion order even when created_at collides — the
+    user row and its assistant row can share a timestamp, so ordering must not
+    depend on the random-uuid id. Also: the internal ordering column never leaks."""
+    import fairway.store as store_mod
+
+    monkeypatch.setattr(store_mod, "_now", lambda: "2026-01-01T00:00:00+00:00")
+    s = await store.create_session()
+    uid = await store.add_message(s["id"], "user", "q")
+    aid = await store.add_message(s["id"], "assistant", "a")
+
+    msgs = await store.list_messages(s["id"])
+    assert [m["id"] for m in msgs] == [uid, aid]
+    assert [m["role"] for m in msgs] == ["user", "assistant"]
+    assert "ordinal" not in msgs[0]
+    assert "ordinal" not in (await store.get_message(uid))
+
+
 async def test_event_log_seq_and_replay(store):
     s = await store.create_session()
     job = await store.create_job(s["id"])

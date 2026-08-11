@@ -46,12 +46,26 @@ class Backend(Protocol):
 # without a prefix length), so each dialect substitutes ID_TYPE / SERIAL below.
 
 
-def _schema(id_type: str, serial: str, ts_type: str = "TEXT", engine: str = "") -> list[str]:
+def _schema(
+    id_type: str,
+    serial: str,
+    ts_type: str = "TEXT",
+    engine: str = "",
+    message_ordinal: str | None = None,
+) -> list[str]:
     """DDL statements (one per element). ``id_type`` types uuid/key columns,
     ``serial`` is the autoincrement PK for job_events.id, ``ts_type`` types the
     ISO-timestamp columns (must be bounded on MySQL since some are indexed),
     ``engine`` is an optional table suffix. Big JSON blobs are LONGTEXT on MySQL,
-    TEXT elsewhere."""
+    TEXT elsewhere.
+
+    ``message_ordinal``: when set (Postgres/MySQL), messages get a monotonic
+    ``ordinal`` autoincrement PK and ``id`` becomes UNIQUE, and the store orders
+    messages by it. created_at is only microsecond-resolution, so a user row and
+    its assistant row can share a timestamp and the random-uuid id makes the
+    tiebreak non-deterministic; the ordinal keeps replay order stable. SQLite
+    leaves it None and orders by the built-in monotonic ``rowid`` instead (no
+    schema change, so existing databases need no migration)."""
     t = id_type
     ts = ts_type
     blob = "LONGTEXT" if engine else "TEXT"
@@ -59,6 +73,10 @@ def _schema(id_type: str, serial: str, ts_type: str = "TEXT", engine: str = "") 
     # silently ignores inline column-level references, so the cascade would never
     # be created. SQLite and Postgres honor the table-level form equally.
     fk = "FOREIGN KEY"
+    if message_ordinal:
+        msg_id_line = f"ordinal {message_ordinal},\n            id {t} NOT NULL UNIQUE,"
+    else:
+        msg_id_line = f"id {t} PRIMARY KEY,"
     return [
         f"""CREATE TABLE IF NOT EXISTS sessions (
             id {t} PRIMARY KEY,
@@ -68,7 +86,7 @@ def _schema(id_type: str, serial: str, ts_type: str = "TEXT", engine: str = "") 
             created_at {ts} NOT NULL
         ){engine}""",
         f"""CREATE TABLE IF NOT EXISTS messages (
-            id {t} PRIMARY KEY,
+            {msg_id_line}
             session_id {t} NOT NULL,
             role TEXT NOT NULL,
             content {blob} NOT NULL,
@@ -203,7 +221,11 @@ class PostgresBackend:
         # Fresh databases get the current schema in full; there is no legacy
         # pre-allowed_tools_json Postgres database to migrate.
         async with self._pool.acquire() as conn:
-            for stmt in _schema(id_type="TEXT", serial="BIGSERIAL PRIMARY KEY"):
+            for stmt in _schema(
+                id_type="TEXT",
+                serial="BIGSERIAL PRIMARY KEY",
+                message_ordinal="BIGSERIAL PRIMARY KEY",
+            ):
                 await conn.execute(stmt)
 
     async def execute(self, sql: str, params: Sequence[Any] = ()) -> None:
@@ -254,6 +276,7 @@ class MySQLBackend:
             serial="BIGINT AUTO_INCREMENT PRIMARY KEY",
             ts_type="VARCHAR(40)",  # ISO-8601 UTC is ~32 chars; indexed, so bounded
             engine=" ENGINE=InnoDB",
+            message_ordinal="BIGINT AUTO_INCREMENT PRIMARY KEY",
         )
         async with self._pool.acquire() as conn:
             async with conn.cursor() as cur:

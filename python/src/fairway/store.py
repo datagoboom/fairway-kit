@@ -137,9 +137,13 @@ class Store:
         q = "SELECT * FROM messages WHERE session_id = ?"
         if not include_streaming:
             q += " AND streaming = 0"
-        q += " ORDER BY created_at, id LIMIT ?"
+        # Deterministic insertion order: SQLite by the built-in rowid, Postgres/
+        # MySQL by the ordinal column (see backends._schema). created_at is only
+        # microsecond-resolution, so a user/assistant pair can tie on timestamp.
+        q += f" ORDER BY {self._message_order} LIMIT ?"
         out = []
         for m in await self.backend.fetchall(q, (session_id, limit)):
+            m.pop("ordinal", None)  # internal ordering key, not part of the message shape
             m["events"] = json.loads(m.pop("events_json")) if m.get("events_json") else None
             m["attachments"] = (
                 json.loads(m.pop("attachments_json")) if m.get("attachments_json") else None
@@ -148,10 +152,15 @@ class Store:
             out.append(m)
         return out
 
+    @property
+    def _message_order(self) -> str:
+        return "rowid" if self.backend.dialect == "sqlite" else "ordinal"
+
     async def get_message(self, message_id: str) -> dict[str, Any] | None:
         m = await self.backend.fetchone("SELECT * FROM messages WHERE id = ?", (message_id,))
         if not m:
             return None
+        m.pop("ordinal", None)  # internal ordering key, not part of the message shape
         m["events"] = json.loads(m.pop("events_json")) if m.get("events_json") else None
         m["streaming"] = bool(m["streaming"])
         return m
