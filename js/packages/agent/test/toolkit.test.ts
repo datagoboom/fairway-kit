@@ -9,30 +9,7 @@ import {
   resolveToolMeta,
   type AgentEvent,
 } from "../src/index.js";
-import type { Emit, StampedEvent, TurnContext } from "../src/index.js";
-
-function harness(overrides: Partial<TurnContext> = {}) {
-  const emitted: StampedEvent[] = [];
-  let seq = 0;
-  const emit: Emit = async (ev) => {
-    const stamped = { ...ev, seq: ++seq, ts: "t" } as StampedEvent;
-    emitted.push(stamped);
-    return stamped;
-  };
-  const ctx: TurnContext = {
-    session: { id: "s1" },
-    messages: [],
-    userContent: "hi",
-    userMessageId: "u1",
-    assistantMessageId: "a1",
-    jobId: "j1",
-    attachments: [],
-    signal: new AbortController().signal,
-    providerSessionId: null,
-    ...overrides,
-  };
-  return { ctx, emit, emitted };
-}
+import { drive, harness } from "./harness.js";
 
 const streamOf = (events: AgentEvent[]) => async function* () {
   for (const e of events) yield e;
@@ -81,11 +58,11 @@ describe("runnerFromStream", () => {
     expect(ctx.newProviderSessionId).toBe("sess-9");
   });
 
-  it("throws on an in-band error event", async () => {
-    const { ctx, emit } = harness();
-    await expect(
-      runnerFromStream({ start: streamOf([{ type: "error", message: "boom" }]) })(ctx, emit),
-    ).rejects.toThrow(/boom/);
+  it("surfaces an in-band error event (via the one-call drive helper)", async () => {
+    const { error } = await drive(
+      runnerFromStream({ start: streamOf([{ type: "error", message: "boom" }]) }),
+    );
+    expect(error?.message).toMatch(/boom/);
   });
 
   it("wires ctx.signal to the stream's abort signal", async () => {

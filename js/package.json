@@ -5,7 +5,8 @@
   "description": "fairway-kit JS monorepo: @fairway-kit/protocol, @fairway-kit/agent, @fairway-kit/client, and @fairway-kit/server",
   "type": "module",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "recipes"
   ],
   "scripts": {
     "build": "npm run build -w @fairway-kit/protocol && npm run build -w @fairway-kit/agent && npm run build -w @fairway-kit/client && npm run build -w @fairway-kit/server",

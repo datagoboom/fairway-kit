@@ -44,7 +44,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "smoke:claude": "tsx scripts/smoke-claude.ts"
   },
   "dependencies": {
     "@fairway-kit/protocol": "0.4.2"
@@ -52,6 +53,7 @@
   "devDependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.227",
     "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
   }

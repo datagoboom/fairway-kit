@@ -5,30 +5,8 @@
 
 import { describe, expect, it } from "vitest";
 import { claudeCodeRunner, DEFAULT_TOOL_META, type SdkMessage } from "../src/adapters/claude-code.js";
-import type { Emit, StampedEvent, TurnContext } from "../src/index.js";
-
-function harness(overrides: Partial<TurnContext> = {}) {
-  const emitted: StampedEvent[] = [];
-  let seq = 0;
-  const emit: Emit = async (ev) => {
-    const stamped = { ...ev, seq: ++seq, ts: "t" } as StampedEvent;
-    emitted.push(stamped);
-    return stamped;
-  };
-  const ctx: TurnContext = {
-    session: { id: "s1" },
-    messages: [],
-    userContent: "hi",
-    userMessageId: "u1",
-    assistantMessageId: "a1",
-    jobId: "j1",
-    attachments: [],
-    signal: new AbortController().signal,
-    providerSessionId: null,
-    ...overrides,
-  };
-  return { ctx, emit, emitted };
-}
+import type { StampedEvent } from "../src/index.js";
+import { harness } from "./harness.js";
 
 const fakeQuery = (msgs: SdkMessage[]) => async function* () {
   for (const m of msgs) yield m;

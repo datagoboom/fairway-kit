@@ -1,0 +1,20 @@
+{
+  "name": "fairway-recipes",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Copy-paste adapter recipes for @fairway-kit/agent — honest starting points, CI-typechecked so they don't rot. Not published.",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@fairway-kit/agent": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "ai": "^5.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

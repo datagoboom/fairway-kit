@@ -1,5 +1,9 @@
 # @fairway-kit/agent
 
+**Claude Code native.** The one bundled, tested runner is the Claude Agent SDK
+adapter; a small toolkit adapts any other harness in ~30 lines, and
+[recipes](https://github.com/datagoboom/fairway-kit) give you a starting point.
+
 The agent integration layer for [fairway](https://github.com/datagoboom/fairway-kit),
 a dev kit for building local, agent-backed applications with durable, resumable
 chat. Two things live here: the **Runner contract** (what you implement to drive
@@ -7,6 +11,11 @@ a turn) and the **adapter toolkit** (helpers that turn any agent's stream into
 durable protocol events). [`@fairway-kit/server`](https://www.npmjs.com/package/@fairway-kit/server)
 consumes a Runner — it never dictates how one is built, so you can plug in any
 agent framework or a remote agent service.
+
+> **What we guarantee:** the Claude Code adapter is dogfooded and tested. Recipes
+> are honest starting points — copy, wire to your provider, and the same
+> conformance harness that tests our adapter validates yours. We ship what we
+> run; everything else is a recipe.
 
 ## The Runner contract
 
