@@ -1,4 +1,4 @@
-/** Postgres backend via `pg` (an optional dependency — installed only when you
+/** Postgres backend via `pg` (an optional dependency - installed only when you
  * use a postgres:// URL). Reads run against a small pool; the seq-critical
  * section stays serialized by Store's mutex, so single-statement autocommit
  * writes are enough (no cross-statement transactions under single-writer). */

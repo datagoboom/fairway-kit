@@ -1,5 +1,5 @@
 /**
- * Fairway example app — MUI edition.
+ * Fairway example app - MUI edition.
  *
  * Deliberately shows the "fully customized" end of the spectrum: no fairway
  * stylesheet, no default bubbles, no stock ChatInput. Fairway supplies only
@@ -430,7 +430,7 @@ function MessageBubble({ row }: { row: ChatRow }) {
   );
 }
 
-/** MUI-styled bouncing dots (the library's TypingIndicator works too — this
+/** MUI-styled bouncing dots (the library's TypingIndicator works too - this
  * shows a themed custom one). */
 function TypingDots() {
   return (

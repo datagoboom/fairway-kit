@@ -2,7 +2,7 @@
 
 fairway is single-writer: one process, one logical writer serialized by this
 store's asyncio write-lock. The backend (SQLite / Postgres / MySQL) is just
-storage — see fairway.backends. The write-lock guards the two places that need
+storage - see fairway.backends. The write-lock guards the two places that need
 cross-statement atomicity (the per-job seq assignment and the allow-tool
 read-modify-write); every other write is a single atomic, autocommitting
 statement, so it goes straight to the backend.

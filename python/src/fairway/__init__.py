@@ -1,4 +1,4 @@
-"""fairway — dev kit backend for local agent-backed apps (see PROTOCOL.md)."""
+"""fairway - dev kit backend for local agent-backed apps (see PROTOCOL.md)."""
 
 from . import events
 from .backends import Backend, MySQLBackend, PostgresBackend, SQLiteBackend, backend_from_url

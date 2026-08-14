@@ -1,10 +1,10 @@
 """Permission gate: hold-until-resolved, session allow memory, deny, stop-deny,
-and endpoint errors — through the real router.
+and endpoint errors - through the real router.
 
 Note on transport: httpx's ASGITransport buffers responses, so a live SSE tail
 can't be consumed while the job is held at the gate. Tests therefore watch the
 job via GET /jobs/{id}/events (polling), resolve the gate, and then assert on
-the fully-replayed stream — same protocol surface, no deadlock.
+the fully-replayed stream - same protocol surface, no deadlock.
 """
 
 import asyncio
@@ -115,7 +115,7 @@ async def test_allow_session_flow_and_memory(app_client):
     assert resolved["decision"] == "allow_session"
     assert events[-1]["type"] == "done"
 
-    # Second turn: the session allow set auto-approves — no gate events at all.
+    # Second turn: the session allow set auto-approves - no gate events at all.
     job2 = await send(client, session["id"])
     events2 = await wait_terminal(client, job2["job_id"])
     types2 = [e["type"] for e in events2]

@@ -21,7 +21,7 @@ import type {
  *
  * `text-delta` streams partial text (coalesced before it hits the durable log);
  * `text-block` is the authoritative closed block that supersedes the streamed
- * run on fold — emit both when the framework provides both (like Claude), or
+ * run on fold - emit both when the framework provides both (like Claude), or
  * just one when it doesn't. `thinking` is delta-only (the protocol has no
  * thinking block). Terminal is implicit: the stream ending is "done", an
  * `error` event (or a thrown error) is "error". */
@@ -39,7 +39,7 @@ const FLUSH_MIN_CHARS = 48;
 
 export interface RunnerFromStreamOptions {
   /** Produce the normalized stream for one turn. `signal` aborts when the turn
-   * is stopped (wired from ctx.signal + gracefulStop) — pass it to your SDK. */
+   * is stopped (wired from ctx.signal + gracefulStop) - pass it to your SDK. */
   start: (
     ctx: TurnContext,
     signal: AbortSignal,
@@ -108,7 +108,7 @@ export function runnerFromStream(opts: RunnerFromStreamOptions): Runner {
     // A thrown abort propagates from the loop (the host maps it to cancelled);
     // an in-band error event is surfaced here (the host maps it to error).
     if (errorResult !== null) throw new Error(errorResult);
-    // Empty content is fine — the host derives it from the folded log.
+    // Empty content is fine - the host derives it from the folded log.
     return { content: textParts.filter(Boolean).join("\n\n") };
   };
 }

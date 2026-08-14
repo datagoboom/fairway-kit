@@ -2,7 +2,7 @@
  * The normative fold: events -> render items (PROTOCOL.md section 5).
  *
  * The SAME function is used for live streaming and for replaying a persisted
- * message's `events` — the single implementation that replaces the hand-synced
+ * message's `events` - the single implementation that replaces the hand-synced
  * reducer copies in every previous app. Pinned by protocol/fold-vectors.json,
  * mirrored by python/src/fairway/fold.py.
  */

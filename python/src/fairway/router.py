@@ -143,7 +143,7 @@ def build_router(
         ] if attachments_dir is not None else []
 
         # PROTOCOL.md 7 send ordering: history snapshot, user row, streaming
-        # assistant row, job row — all durable before we respond or start the runner.
+        # assistant row, job row - all durable before we respond or start the runner.
         history = await store.list_messages(session_id)
         user_message_id = await store.add_message(
             session_id, "user", body.content, attachments=public_refs or None
@@ -176,7 +176,7 @@ def build_router(
         async def gen():
             async for ev in registry.stream(job_id, since=since):
                 if ev is None:
-                    yield ": hb\n\n"  # heartbeat comment — never an event (PROTOCOL.md 3)
+                    yield ": hb\n\n"  # heartbeat comment - never an event (PROTOCOL.md 3)
                 else:
                     yield f"data: {json.dumps(ev)}\n\n"
 
@@ -221,9 +221,9 @@ def mount_agent_chat(
     """One-call integration: opens the store, runs the startup sweep, mounts routes.
 
     db_url: the database. A bare path or ``sqlite:///path.db`` uses SQLite (the
-    default, zero extra deps); ``postgresql://…`` needs ``fairway-kit[postgres]``
-    and ``mysql://…`` needs ``fairway-kit[mysql]``. db_path is a backward-compat
-    alias for a SQLite path. fairway is single-writer regardless of backend — the
+    default, zero extra deps); ``postgresql://...`` needs ``fairway-kit[postgres]``
+    and ``mysql://...`` needs ``fairway-kit[mysql]``. db_path is a backward-compat
+    alias for a SQLite path. fairway is single-writer regardless of backend - the
     database is a storage choice, not a way to run multiple processes.
 
     retention_days: on startup, drop event logs of terminal jobs older than

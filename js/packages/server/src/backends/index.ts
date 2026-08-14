@@ -1,10 +1,10 @@
 /** Backend factory: build a Backend from a database URL or a bare SQLite path.
  *
- * - postgresql://user:pass@host:port/db  (or postgres://)  — needs `pg`
- * - mysql://user:pass@host:port/db                          — needs `mysql2`
+ * - postgresql://user:pass@host:port/db  (or postgres://)  - needs `pg`
+ * - mysql://user:pass@host:port/db                          - needs `mysql2`
  * - sqlite:///relative/or/abs/path.db  or a bare filesystem path (default)
  *
- * fairway is single-writer regardless of backend — the database is a storage
+ * fairway is single-writer regardless of backend - the database is a storage
  * choice, not a way to run multiple processes.
  */
 

@@ -94,7 +94,7 @@ async def test_messages_and_attachments(store):
 
 
 async def test_messages_ordered_by_insertion(store, monkeypatch):
-    """Messages return in insertion order even when created_at collides — the
+    """Messages return in insertion order even when created_at collides - the
     user row and its assistant row can share a timestamp, so ordering must not
     depend on the random-uuid id. Also: the internal ordering column never leaks."""
     import fairway.store as store_mod

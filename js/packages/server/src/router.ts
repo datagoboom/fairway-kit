@@ -133,7 +133,7 @@ export function createHandler(deps: RouterDeps): (req: Req, res: Res) => Promise
             }));
 
       // PROTOCOL.md 7 send ordering: history snapshot, user row, streaming
-      // assistant row, job row — all durable before we respond or start the runner.
+      // assistant row, job row - all durable before we respond or start the runner.
       const history = await store.listMessages(sessionId);
       const userMessageId = await store.addMessage(sessionId, "user", content, {
         attachments: publicRefs.length ? publicRefs : null,

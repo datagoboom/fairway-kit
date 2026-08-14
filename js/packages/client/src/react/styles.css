@@ -2,7 +2,7 @@
  * Import from your app:  import "fairway-kit/react/styles.css";
  * Everything targets the stable data-* attributes, so overriding any part of
  * it from app CSS needs no extra specificity tricks. Colors derive from a few
- * custom properties — retheme by redefining them on any ancestor. */
+ * custom properties - retheme by redefining them on any ancestor. */
 
 [data-fairway-panel] {
   --fw-bg: transparent;
@@ -70,7 +70,7 @@
 [data-fairway-item="tool"][data-status="ok"] { border-color: #3a5a3a; }
 [data-fairway-item="tool"][data-status="err"] { border-color: #6a3a3a; }
 [data-fairway-item="tool"][data-status="interrupted"] { border-color: #6a5a3a; }
-/* status dot — pure CSS, no glyphs */
+/* status dot - pure CSS, no glyphs */
 [data-fairway-tool-label]::before {
   content: "";
   display: inline-block;

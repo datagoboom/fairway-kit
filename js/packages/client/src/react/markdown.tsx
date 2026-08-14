@@ -1,5 +1,5 @@
 /**
- * Opt-in markdown Text renderer — subpath export so react-markdown is only
+ * Opt-in markdown Text renderer - subpath export so react-markdown is only
  * pulled in by apps that import "fairway-kit/react/markdown".
  *
  *   import { MarkdownText } from "fairway-kit/react/markdown";

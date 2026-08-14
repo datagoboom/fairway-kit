@@ -1,7 +1,7 @@
 """The app-facing runner interface (PROTOCOL.md section 13).
 
-Apps implement `Runner` (an async callable); everything else — seq stamping,
-persistence, fan-out, message lifecycle, stop escalation — is the library's job.
+Apps implement `Runner` (an async callable); everything else - seq stamping,
+persistence, fan-out, message lifecycle, stop escalation - is the library's job.
 """
 
 from __future__ import annotations
@@ -60,7 +60,7 @@ class Runner(Protocol):
 
 class GracefulStop(Protocol):
     """Optional companion the registry calls on stop before escalating to hard
-    cancel — e.g. ClaudeSDKClient.interrupt(). Registered per-job by the runner via
+    cancel - e.g. ClaudeSDKClient.interrupt(). Registered per-job by the runner via
     ctx (TODO: wire once the SDK adapter lands)."""
 
     async def __call__(self) -> None: ...

@@ -1,15 +1,15 @@
 /**
- * RECIPE — Vercel AI SDK adapter.
+ * RECIPE - Vercel AI SDK adapter.
  *
  * NOT a shipped, guaranteed adapter. Copy this file into your app, install
- * `ai` + a provider (`@ai-sdk/anthropic`, `@ai-sdk/openai`, …), and verify it
+ * `ai` + a provider (`@ai-sdk/anthropic`, `@ai-sdk/openai`, ...), and verify it
  * against your provider. It's typed against the AI SDK's real `fullStream` part
- * union, so the field mapping is compile-checked — but only you can confirm it
+ * union, so the field mapping is compile-checked - but only you can confirm it
  * against a live model. The same conformance harness that tests fairway's
  * shipped adapter validates this one (see ai-sdk.test.ts).
  *
  * One AI SDK adapter covers every provider the SDK supports (Anthropic, OpenAI,
- * Google, Mistral, Bedrock, Groq, Ollama, …) — that's the leverage. It's also
+ * Google, Mistral, Bedrock, Groq, Ollama, ...). It's also
  * *stateless*: the SDK holds no server session, so fairway feeds history from
  * its own store each turn (contrast claude-code, which round-trips a resume id).
  *
@@ -64,12 +64,12 @@ async function* aiSdkStream(
     const ev = mapPart(part);
     if (ev) yield ev;
   }
-  // No "session" event — stateless (see toModelMessages).
+  // No "session" event - stateless (see toModelMessages).
 }
 
 /** The entire adapter is this map from AI SDK stream parts to AgentEvents.
- * Everything else — coalescing, the text-block supersede, tool-meta, terminal,
- * cancellation — is the pump. Exported so the test can exercise it directly. */
+ * Everything else - coalescing, the text-block supersede, tool-meta, terminal,
+ * cancellation - is the pump. Exported so the test can exercise it directly. */
 export function mapPart<TOOLS extends ToolSet>(part: TextStreamPart<TOOLS>): AgentEvent | null {
   switch (part.type) {
     case "text-delta":
@@ -85,7 +85,7 @@ export function mapPart<TOOLS extends ToolSet>(part: TextStreamPart<TOOLS>): Age
     case "error":
       return { type: "error", message: errText(part.error) };
     default:
-      // start / finish / *-start / *-end / step / source / file / raw / abort —
+      // start / finish / *-start / *-end / step / source / file / raw / abort -
       // not protocol events. Terminal is implicit (the stream ending = done).
       return null;
   }

@@ -2,7 +2,7 @@
 
 fairway is single-writer by design: one process, one logical writer serialized
 by Store's asyncio write-lock. The database is swappable storage underneath.
-This is a storage choice, not a scaling story — running fairway across multiple
+This is a storage choice, not a scaling story - running fairway across multiple
 processes is out of scope regardless of backend (the live job registry, SSE
 fan-out, and permission-gate futures all live in process memory).
 
@@ -10,13 +10,13 @@ A backend normalizes the four things that actually diverge by dialect:
 parameter placeholders (the store writes ``?`` everywhere), schema DDL, schema
 introspection for the additive migration, and connection/pool setup. Reads run
 concurrently against a small pool; the seq-critical section stays serialized by
-Store's write-lock, so single-statement autocommit writes are enough — no
+Store's write-lock, so single-statement autocommit writes are enough - no
 cross-statement transactions are required under single-writer.
 
 Backends:
-    sqlite  (default, zero extra deps) — aiosqlite, one connection
-    postgres (``pip install "fairway-kit[postgres]"``) — asyncpg pool
-    mysql    (``pip install "fairway-kit[mysql]"``)    — aiomysql pool
+    sqlite  (default, zero extra deps) - aiosqlite, one connection
+    postgres (``pip install "fairway-kit[postgres]"``) - asyncpg pool
+    mysql    (``pip install "fairway-kit[mysql]"``)    - aiomysql pool
 """
 
 from __future__ import annotations

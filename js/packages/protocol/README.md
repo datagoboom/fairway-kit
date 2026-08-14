@@ -12,7 +12,7 @@ import { fold, foldAll, isTerminal, type ChatEvent, type StreamItem } from "@fai
 const items: StreamItem[] = foldAll(events);
 ```
 
-Pure and dependency-free — no React, no DOM, no HTTP. The fold is pinned by a
+Pure and dependency-free - no React, no DOM, no HTTP. The fold is pinned by a
 cross-language conformance vector set that both the TypeScript and Python
 implementations run, so every client and server that builds on it renders
 identically. Most apps get this transitively via

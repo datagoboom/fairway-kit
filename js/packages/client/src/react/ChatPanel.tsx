@@ -1,5 +1,5 @@
 /**
- * ChatPanel — the messages viewport, and only that. Fills its containing
+ * ChatPanel - the messages viewport, and only that. Fills its containing
  * element (100% width/height), scrolls internally, sticks to the bottom while
  * streaming unless the user scrolls up, and renders the merged row list with
  * per-item-type components that can be overridden or nulled out.
@@ -29,7 +29,7 @@ export interface ItemComponentProps<I extends StreamItem = StreamItem> {
   row: ChatRow;
 }
 
-/** Override map, keyed by fold item type — plus extension/unknown event types
+/** Override map, keyed by fold item type - plus extension/unknown event types
  * (the `x_*` namespace), keyed by the opaque event's own `type`. `null` hides
  * that item type entirely. */
 export interface ChatComponents {
@@ -261,7 +261,7 @@ export function PermissionPrompt({ item }: ItemComponentProps<PermissionItem>) {
   const { respondPermission } = useChatContext();
   const decide = (decision: "allow" | "allow_session" | "deny") => {
     void respondPermission(item.id, decision).catch(() => {
-      // Already resolved elsewhere (another tab, stop) — replay will correct us.
+      // Already resolved elsewhere (another tab, stop) - replay will correct us.
     });
   };
   return (

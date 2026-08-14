@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
 
-// The libraries are consumed straight from source — no build step, and edits to
+// The libraries are consumed straight from source - no build step, and edits to
 // ../../js/packages/* hot-reload into this app.
 const pkg = (p: string) => path.resolve(__dirname, "../../../js/packages", p);
 

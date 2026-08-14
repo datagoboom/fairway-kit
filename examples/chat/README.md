@@ -4,10 +4,10 @@ End-to-end test bed for the whole stack: an agent backend behind
 `createAgentChat` + the Claude adapter, and a Vite/React front end using the
 fairway-kit components. Both the front end and the Node backend consume the
 libraries straight from `../../js/packages/*` source (via a Vite alias and
-tsconfig paths respectively), so there is no build step for the lib — edits
+tsconfig paths respectively), so there is no build step for the lib - edits
 hot-reload into the running example.
 
-## Run (Node backend — `@fairway-kit/server`)
+## Run (Node backend - `@fairway-kit/server`)
 
 Backend (from `server/`):
 
@@ -18,7 +18,7 @@ FAIRWAY_RUNNER=echo npm run dev        # http://localhost:8500
 
 - Offline (no credentials needed): `FAIRWAY_RUNNER=echo`.
 - Claude mode is the default (the Claude Agent SDK is already installed with the
-  lib) — just start without `FAIRWAY_RUNNER=echo` and provide credentials:
+  lib) - just start without `FAIRWAY_RUNNER=echo` and provide credentials:
   - Subscription: `FAIRWAY_AUTH=subscription` (uses your `claude login`), or
     `FAIRWAY_AUTH=inherit` if the environment is already logged in.
   - API key: `FAIRWAY_AUTH=api` with `ANTHROPIC_API_KEY` set.
@@ -59,5 +59,5 @@ Offline: prefix with `FAIRWAY_RUNNER=echo`.
 - Open the same session in two tabs and send from both. The second send gets
   a 409 and reattaches to the running job.
 - Open Settings and switch the runner, model, auth mode, tools, or the
-  available/pre-approved tool split — it rebuilds the runner live for the next
+  available/pre-approved tool split - it rebuilds the runner live for the next
   message.

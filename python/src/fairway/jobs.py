@@ -130,7 +130,7 @@ class JobRegistry:
                 await emit(
                     E.permission_request(request_id, tool, kind, label or tool, detail, input)
                 )
-                decision = await future  # indefinite hold — resolved by the user or by stop()
+                decision = await future  # indefinite hold - resolved by the user or by stop()
             finally:
                 live.pending_permissions.pop(request_id, None)
             await emit(E.permission_resolved(request_id, decision))
@@ -148,7 +148,7 @@ class JobRegistry:
         except asyncio.CancelledError:
             await self._finish(live, ctx, emitted, E.cancelled(ctx.assistant_message_id),
                                content=final_text(emitted), status="cancelled")
-        except Exception as exc:  # noqa: BLE001 — runner failures become protocol errors
+        except Exception as exc:  # noqa: BLE001 - runner failures become protocol errors
             log.exception("runner failed for job %s", job_id)
             await self._finish(live, ctx, emitted,
                                E.error(str(exc), message_id=ctx.assistant_message_id),
@@ -181,7 +181,7 @@ class JobRegistry:
         # Compaction (PROTOCOL.md 6): drop text deltas a text_block supersedes.
         # Fold-idempotent by construction. Runs BEFORE the terminal event is
         # appended so every replay that sees the terminal sees the same log;
-        # live subscribers already received the deltas. Safe to fail silently —
+        # live subscribers already received the deltas. Safe to fail silently -
         # the finalized events_json above is the durable copy.
         with contextlib.suppress(Exception):
             await self._store.delete_events_by_seq(
@@ -215,7 +215,7 @@ class JobRegistry:
                     return
             if q is None:
                 # Job not live (finished long ago, or swept). Log without a terminal
-                # event only ever means "still running" — and it isn't, so the sweep
+                # event only ever means "still running" - and it isn't, so the sweep
                 # or finish path will have appended one; reaching here is done.
                 job = await self._store.get_job(job_id)
                 if job and job["status"] == "running":

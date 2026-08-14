@@ -1,4 +1,4 @@
-/** Mapping test for the AI SDK recipe — self-contained (no `ai` runtime, no
+/** Mapping test for the AI SDK recipe - self-contained (no `ai` runtime, no
  * model, no network), so this file copies cleanly alongside the recipe. It
  * feeds fake `fullStream` parts through the recipe's map and the pump, exactly
  * the way fairway's shipped adapter is tested. */
@@ -13,7 +13,7 @@ import {
 } from "@fairway-kit/agent";
 import { mapPart } from "./ai-sdk.js";
 
-// A minimal driver — the copy-friendly version of the conformance harness.
+// A minimal driver - the copy-friendly version of the conformance harness.
 function makeEmit() {
   const emitted: StampedEvent[] = [];
   let seq = 0;

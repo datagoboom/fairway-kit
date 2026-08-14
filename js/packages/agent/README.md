@@ -9,11 +9,11 @@ a dev kit for building local, agent-backed applications with durable, resumable
 chat. Two things live here: the **Runner contract** (what you implement to drive
 a turn) and the **adapter toolkit** (helpers that turn any agent's stream into
 durable protocol events). [`@fairway-kit/server`](https://www.npmjs.com/package/@fairway-kit/server)
-consumes a Runner — it never dictates how one is built, so you can plug in any
+consumes a Runner - it never dictates how one is built, so you can plug in any
 agent framework or a remote agent service.
 
 > **What we guarantee:** the Claude Code adapter is dogfooded and tested. Recipes
-> are honest starting points — copy, wire to your provider, and the same
+> are honest starting points - copy, wire to your provider, and the same
 > conformance harness that tests our adapter validates yours. We ship what we
 > run; everything else is a recipe.
 
@@ -26,7 +26,7 @@ before fan-out, so live streaming and replay are byte-identical.
 
 ## The toolkit
 
-Most adapters don't touch `emit` directly — they map their framework's stream
+Most adapters don't touch `emit` directly - they map their framework's stream
 onto a normalized `AgentEvent` union and hand it to `runnerFromStream`, which
 owns coalescing, the authoritative-block supersede, tool-call metadata, the
 session-id round-trip, terminal handling, and cancellation:
@@ -50,7 +50,7 @@ authoritative block that supersedes the streamed run on fold), `thinking-delta`,
 token), and `error`. Terminal is implicit: the stream ending is "done".
 
 Also exported: `Coalescer`, `DEFAULT_TOOL_META` / `resolveToolMeta`, and the
-permission-gate helpers — `requestToolPermission` (for `canUseTool`-style hooks)
+permission-gate helpers - `requestToolPermission` (for `canUseTool`-style hooks)
 and `gateTool` (wrap an app-owned tool's `execute` so it asks before running).
 
 ## Bundled adapters

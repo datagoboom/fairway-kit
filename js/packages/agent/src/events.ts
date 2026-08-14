@@ -1,5 +1,5 @@
 /**
- * Event constructors + validation — the write side a runner uses to emit
+ * Event constructors + validation - the write side a runner uses to emit
  * protocol events. The event TYPES and the fold come from @fairway-kit/protocol
  * (shared with clients); this module is the producer half. The envelope
  * (seq, ts) is stamped by the store at persist time, never by producers.

@@ -1,9 +1,9 @@
 /**
- * Fairway example chat server — Node edition.
+ * Fairway example chat server - Node edition.
  *
  * The all-Node counterpart to server.py: the same protocol stack behind a real
  * agent, with a small settings API (GET/PUT /api/settings) that rebuilds the
- * runner live — a demonstration that a fairway runner is just a swappable async
+ * runner live - a demonstration that a fairway runner is just a swappable async
  * callable. Uses @fairway-kit/server and its Claude adapter.
  *
  *   FAIRWAY_RUNNER=echo   start in offline echo mode (no credentials)
@@ -153,5 +153,5 @@ await chat.start(); // opens the store, runs the startup orphan sweep
 const port = Number(process.env.PORT ?? 8500);
 server.listen(port, () => {
   const mode = settings.runner === "echo" ? "echo (offline)" : `claude (${settings.model})`;
-  console.log(`fairway example server on http://localhost:${port} — runner: ${mode}`);
+  console.log(`fairway example server on http://localhost:${port} - runner: ${mode}`);
 });

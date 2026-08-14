@@ -1,7 +1,7 @@
 """ClaudeSDKRunner adapter tests against a scripted fake of claude_agent_sdk.
 
 The adapter imports the SDK lazily inside __call__, so installing fake
-`claude_agent_sdk` / `claude_agent_sdk.types` modules in sys.modules is enough —
+`claude_agent_sdk` / `claude_agent_sdk.types` modules in sys.modules is enough -
 no real CLI, no network.
 """
 

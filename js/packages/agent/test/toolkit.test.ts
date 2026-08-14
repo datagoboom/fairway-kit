@@ -1,6 +1,6 @@
 /** The pump (runnerFromStream) is the framework-agnostic core every adapter
- * reuses. These tests drive it with hand-written AgentEvent streams — no
- * framework at all — which is exactly the surface a new adapter targets. */
+ * reuses. These tests drive it with hand-written AgentEvent streams - no
+ * framework at all - which is exactly the surface a new adapter targets. */
 
 import { describe, expect, it } from "vitest";
 import {

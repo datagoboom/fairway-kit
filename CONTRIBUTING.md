@@ -16,10 +16,10 @@ improvements, and UI component work are all welcome.
 protocol/         JSON Schema for the event union + shared fold conformance vectors
 python/           fairway-kit on PyPI (import fairway): FastAPI backend
 js/packages/
-  protocol/       @fairway-kit/protocol — wire events + fold (shared with the client)
-  agent/          @fairway-kit/agent — Runner contract, the adapter toolkit, shipped adapters
-  server/         @fairway-kit/server — durable event log, job registry, HTTP handler
-  client/         @fairway-kit/client — SSE/REST client + React components
+  protocol/       @fairway-kit/protocol - wire events + fold (shared with the client)
+  agent/          @fairway-kit/agent - Runner contract, the adapter toolkit, shipped adapters
+  server/         @fairway-kit/server - durable event log, job registry, HTTP handler
+  client/         @fairway-kit/client - SSE/REST client + React components
 js/recipes/       copy-paste adapter recipes (not published; CI-typechecked)
 examples/         full example app used for live verification
 ```
@@ -47,13 +47,13 @@ locally before opening a PR.
 
 ## Adapters: ship = dogfood
 
-fairway is agent-agnostic through one seam — the `Runner`
+fairway is agent-agnostic through one seam - the `Runner`
 (`(ctx, emit) => TurnResult`). `@fairway-kit/agent` is the toolkit for building
 runners; adapters map a framework's stream onto the normalized `AgentEvent`
 union and hand it to `runnerFromStream`.
 
 We deliberately ship **very few** adapters, because a shipped adapter is a
-standing promise of correctness that only live use can keep — and no one can
+standing promise of correctness that only live use can keep - and no one can
 maintain live, credentialed CI across every framework. So the rule is:
 
 > **Ship an adapter only if a maintainer dogfoods it.** Dogfooding is the
@@ -64,13 +64,13 @@ Concretely:
 - **Shipped** (in `js/packages/agent`): the Claude Code adapter. Mapping-tested
   with a fake stream, plus a manual `npm run smoke:claude -w @fairway-kit/agent`
   you run against the real SDK before a release.
-- **Recipe** (in `js/recipes`): everything else — a copy-paste file, typechecked
+- **Recipe** (in `js/recipes`): everything else - a copy-paste file, typechecked
   against the framework's real types and mapping-tested with a self-contained
   harness, but *not* a guarantee. The copier verifies it against their provider.
 
 A PR that adds `@fairway-kit/agent/<your-framework>` will be redirected to a
 recipe unless a maintainer commits to running it. This isn't a knock on the
-adapter — it's how we keep every shipped promise honest.
+adapter - it's how we keep every shipped promise honest.
 
 ## Invariants
 

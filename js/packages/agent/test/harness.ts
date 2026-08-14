@@ -1,4 +1,4 @@
-/** The conformance harness: the shared bar every runner is validated against —
+/** The conformance harness: the shared bar every runner is validated against -
  * the shipped claude-code adapter, the pump itself, and (by copying this file's
  * pattern) any recipe adapter. It builds a fake TurnContext + a capturing emit,
  * runs a runner, and hands back what it emitted so a test can assert ordering,
@@ -43,7 +43,7 @@ export function harness(overrides: Partial<TurnContext> = {}) {
   return { ctx, emit, emitted };
 }
 
-/** Run a runner to completion and capture the outcome — the one call a recipe's
+/** Run a runner to completion and capture the outcome - the one call a recipe's
  * test needs. Returns what was emitted plus the TurnResult (or the thrown
  * error), so a test asserts the contract without touching the framework. */
 export async function drive(

@@ -1,5 +1,5 @@
 /**
- * @fairway-kit/server — the Node backend for the Agent Chat Protocol.
+ * @fairway-kit/server - the Node backend for the Agent Chat Protocol.
  *
  *   import { createAgentChat, EchoRunner } from "@fairway-kit/server";
  *   const chat = createAgentChat({ dbUrl: "./chat.db", runner: EchoRunner });
@@ -9,7 +9,7 @@
  *
  * Single-writer, SQLite by default; Postgres (postgres://, needs `pg`) and
  * MySQL (mysql://, needs `mysql2`) are drop-in via the db URL. A runner is any
- * async (ctx, emit) => TurnResult — build one with @fairway-kit/agent (or use
+ * async (ctx, emit) => TurnResult - build one with @fairway-kit/agent (or use
  * its claudeCodeRunner adapter), or drive it with any agent you like.
  */
 

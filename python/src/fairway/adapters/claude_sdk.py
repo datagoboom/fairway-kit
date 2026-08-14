@@ -19,17 +19,17 @@ environment: an ANTHROPIC_API_KEY wins over the CLI's stored subscription login
 (`claude login`, Pro/Max OAuth). The subprocess inherits this process's env and
 merges ClaudeAgentOptions.env over it, so:
 
-- ``auth="api"``           — bill per-token via the API. Passes ``api_key`` (or the
+- ``auth="api"``           - bill per-token via the API. Passes ``api_key`` (or the
                              inherited ANTHROPIC_API_KEY) into the subprocess env;
                              raises if neither is available.
-- ``auth="subscription"``  — use the Claude subscription. Overrides
+- ``auth="subscription"``  - use the Claude subscription. Overrides
                              ANTHROPIC_API_KEY to "" so an exported key in the host
                              process cannot shadow the CLI's stored OAuth login
                              (the CLI treats an empty key as unset). Optionally
                              pass ``oauth_token`` (from ``claude setup-token``) as
                              CLAUDE_CODE_OAUTH_TOKEN for headless hosts with no
                              stored login.
-- ``auth="inherit"``       — (default) leave the environment alone; whatever the
+- ``auth="inherit"``       - (default) leave the environment alone; whatever the
                              host process/CLI is configured with applies.
 """
 
@@ -44,7 +44,7 @@ from ..runner import Emit, TurnContext, TurnResult
 
 AuthMode = Literal["api", "subscription", "inherit"]
 
-# Coalesce streamed deltas so the wire (and therefore the event log — they are
+# Coalesce streamed deltas so the wire (and therefore the event log - they are
 # the same, PROTOCOL.md 4.3) isn't one event per token.
 FLUSH_INTERVAL_S = 0.15
 FLUSH_MIN_CHARS = 48
@@ -127,7 +127,7 @@ class ClaudeSDKRunner:
         """Wire the protocol permission gate into the SDK's can_use_tool hook.
 
         Only meaningful when permission_mode leaves decisions to the callback
-        ("default"/"acceptEdits"/"plan" — the SDK shadows it under
+        ("default"/"acceptEdits"/"plan" - the SDK shadows it under
         "bypassPermissions"/"dontAsk"). Tools listed in `allowed_tools` are
         auto-approved by the SDK before the callback runs, which composes with
         the gate: allowed_tools = pre-approved, everything else asks.
@@ -148,7 +148,7 @@ class ClaudeSDKRunner:
             if meta.detail is not None and isinstance(input_data, dict):
                 try:
                     detail = meta.detail(input_data)
-                except Exception:  # noqa: BLE001 — detail is cosmetic
+                except Exception:  # noqa: BLE001 - detail is cosmetic
                     detail = None
             decision = await request_permission(
                 tool=name, kind=meta.kind, label=meta.label, detail=detail, input=input_data
@@ -248,7 +248,7 @@ class ClaudeSDKRunner:
 
     def _build_prompt(self, ctx: TurnContext) -> str:
         """SDK-side session resume is the primary continuity mechanism; inject a
-        compact history block ONLY when there is no resume token — doing both
+        compact history block ONLY when there is no resume token - doing both
         double-feeds the conversation and bloats the prompt."""
         if ctx.provider_session_id or not ctx.messages:
             return self._append_file_notes(ctx.user_content, ctx)
@@ -283,7 +283,7 @@ class ClaudeSDKRunner:
         if meta.detail is not None and isinstance(block.input, dict):
             try:
                 detail = meta.detail(block.input)
-            except Exception:  # noqa: BLE001 — detail is cosmetic, never fatal
+            except Exception:  # noqa: BLE001 - detail is cosmetic, never fatal
                 detail = None
         return E.tool_call(block.id, name, meta.kind, meta.label, detail=detail)
 
@@ -330,7 +330,7 @@ class _Coalescer:
         self._last_flush = time.monotonic()
 
     async def drop_pending(self, kind: str) -> None:
-        """Discard buffered deltas of `kind` — the authoritative block for the
+        """Discard buffered deltas of `kind` - the authoritative block for the
         run has arrived (text_block replaces the streamed run on fold)."""
         if self._kind == kind:
             self._buf = []

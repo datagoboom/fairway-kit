@@ -2,7 +2,7 @@
  * SSE stream client (PROTOCOL.md sections 6, 11).
  *
  * fetch() + ReadableStream (not EventSource) for AbortController support.
- * Tracks the highest seq seen and auto-reconnects with ?since= — dedupe is
+ * Tracks the highest seq seen and auto-reconnects with ?since= - dedupe is
  * inherent (server only sends seq > since). One bad frame is skipped, never fatal.
  */
 
@@ -19,7 +19,7 @@ export interface StreamOptions {
    * the connection is presumed dead and torn down for a reconnect. The server
    * heartbeats every 20s, so the default (45s) tolerates one lost beat.
    * Guards against half-open sockets that never EOF (dev proxies, sleep/wake,
-   * NAT timeouts) — without it a killed server can hang the reader forever. */
+   * NAT timeouts) - without it a killed server can hang the reader forever. */
   staleMs?: number;
   onEvent: (ev: ChatEvent) => void;
   onConnectionChange?: (state: "connecting" | "open" | "reconnecting" | "closed") => void;
@@ -71,7 +71,7 @@ export function streamJob(baseUrl: string, jobId: string, opts: StreamOptions): 
         for (;;) {
           const { value, done: eof } = await reader.read();
           if (eof) break;
-          lastByteAt = Date.now(); // heartbeats count — that's their job
+          lastByteAt = Date.now(); // heartbeats count - that's their job
           buf += decoder.decode(value, { stream: true });
           let idx: number;
           while ((idx = buf.indexOf("\n\n")) !== -1) {
@@ -89,7 +89,7 @@ export function streamJob(baseUrl: string, jobId: string, opts: StreamOptions): 
             }
           }
         }
-        // Server closed without a terminal event (e.g. deploy) — reconnect.
+        // Server closed without a terminal event (e.g. deploy) - reconnect.
         throw new Error("stream ended without terminal event");
       } catch (err) {
         if (controller.signal.aborted) {

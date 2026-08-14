@@ -1,5 +1,5 @@
-/** Storage-side types. The Runner contract (TurnContext, Emit, Runner, …) and
- * the event constructors live in @fairway-kit/agent — the server consumes a
+/** Storage-side types. The Runner contract (TurnContext, Emit, Runner, ...) and
+ * the event constructors live in @fairway-kit/agent - the server consumes a
  * Runner, it doesn't define how one is built. This module is just the backend
  * driver interface and the seq mutex. */
 
@@ -16,7 +16,7 @@ export interface Backend {
   fetchAll(sql: string, params?: unknown[]): Promise<Record<string, unknown>[]>;
 }
 
-/** Minimal FIFO async mutex — serializes the seq-critical section and the
+/** Minimal FIFO async mutex - serializes the seq-critical section and the
  * allow-tool read-modify-write, exactly like the Python asyncio.Lock. */
 export class Mutex {
   private tail: Promise<void> = Promise.resolve();

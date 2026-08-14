@@ -1,7 +1,7 @@
 /**
  * React hook implementing the client behaviors of PROTOCOL.md sections 6-7:
  * history load, active-job reattach on mount, optimistic send, live fold overlay,
- * deterministic done-handoff (fetch by message_id — no retry loops), stop.
+ * deterministic done-handoff (fetch by message_id - no retry loops), stop.
  *
  * Rendering is the app's job: `messages` (persisted) + `liveItems` (in-flight
  * overlay) are the two tracks, concatenated in that order.
@@ -82,7 +82,7 @@ export function useAgentChat(
         optsRef.current.onError?.((ev as { message: string }).message);
       }
       // Deterministic handoff: PROTOCOL.md 7 guarantees the row is committed
-      // before the terminal event, so one fetch suffices — retrying is a server bug.
+      // before the terminal event, so one fetch suffices - retrying is a server bug.
       const sid = sessionRef.current;
       if (sid) {
         const { messages: fresh } = await client.listMessages(sid);
@@ -121,7 +121,7 @@ export function useAgentChat(
       setMessages(hist);
       const { job_id } = await client.activeJob(sessionId);
       if (stale) return;
-      if (job_id) attach(job_id); // full replay (since=0) folds from empty — idempotent
+      if (job_id) attach(job_id); // full replay (since=0) folds from empty - idempotent
     })();
     return () => {
       stale = true;
@@ -151,7 +151,7 @@ export function useAgentChat(
       } catch (err) {
         setMessages((cur) => cur.filter((m) => m.id !== optimistic.id));
         if (err instanceof ConflictError) {
-          // Session already has a running job (another tab?) — reattach to it.
+          // Session already has a running job (another tab?) - reattach to it.
           if (err.activeJobId) attach(err.activeJobId);
         }
         throw err;

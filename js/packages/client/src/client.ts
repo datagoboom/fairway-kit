@@ -50,7 +50,7 @@ export function protocolWarning(clientVersion: string, serverVersion: string): s
   if (cMaj !== sMaj) {
     return (
       `fairway protocol MAJOR version mismatch: client speaks ${clientVersion}, ` +
-      `server speaks ${serverVersion}. Expect breakage — upgrade the older side.`
+      `server speaks ${serverVersion}. Expect breakage - upgrade the older side.`
     );
   }
   return (
@@ -138,7 +138,7 @@ export class AgentChatClient {
       const { protocol_version } = await this.meta();
       return protocolWarning(PROTOCOL_VERSION, protocol_version);
     } catch {
-      return null; // meta unreachable — real requests will surface the error
+      return null; // meta unreachable - real requests will surface the error
     }
   }
 

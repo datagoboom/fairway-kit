@@ -1,5 +1,5 @@
 /**
- * ChatInput — optional companion composer. Owns the send/streaming/stop state
+ * ChatInput - optional companion composer. Owns the send/streaming/stop state
  * machine and (optionally) file attachments; apps that want a custom composer
  * use useChatContext() instead and skip this entirely.
  *

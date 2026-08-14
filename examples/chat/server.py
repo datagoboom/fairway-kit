@@ -1,7 +1,7 @@
 """Fairway example chat server.
 
 Runs the full protocol stack behind a real agent, with a small settings API
-(GET/PUT /api/settings) that rebuilds the runner live — a demonstration that a
+(GET/PUT /api/settings) that rebuilds the runner live - a demonstration that a
 fairway runner is just a swappable async callable.
 
     FAIRWAY_RUNNER=echo          start in offline echo mode (no credentials)

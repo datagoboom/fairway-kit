@@ -1,5 +1,5 @@
 /**
- * @fairway-kit/agent — the agent integration layer for fairway.
+ * @fairway-kit/agent - the agent integration layer for fairway.
  *
  * Two things live here: the **Runner contract** (what you implement to drive a
  * turn) and the **adapter toolkit** (helpers that turn any agent's stream into

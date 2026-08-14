@@ -1,6 +1,6 @@
 /** The Runner contract: what an app (or an adapter) implements to drive a turn,
  * and the context + emit surface the host hands it. This is the integration
- * boundary — @fairway-kit/server invokes a Runner; it never dictates how one is
+ * boundary - @fairway-kit/server invokes a Runner; it never dictates how one is
  * built. Storage types (Backend, the seq mutex) live in the server, not here. */
 
 import type { EmitEvent } from "./events.js";
@@ -39,7 +39,7 @@ export interface PermissionRequest {
 export type PermissionOutcome = "allow" | "allow_session" | "deny";
 
 /** What the runner produces. The host finalizes the assistant row from this
- * BEFORE emitting the terminal event (PROTOCOL.md 7). `content` may be empty —
+ * BEFORE emitting the terminal event (PROTOCOL.md 7). `content` may be empty -
  * the host then derives it from the folded event log. */
 export interface TurnResult {
   content: string;

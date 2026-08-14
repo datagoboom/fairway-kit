@@ -1,4 +1,4 @@
-/** MySQL backend via `mysql2` (an optional dependency — installed only when you
+/** MySQL backend via `mysql2` (an optional dependency - installed only when you
  * use a mysql:// URL). mysql2 uses `?` placeholders natively, so no rewrite is
  * needed. autocommit is on by default, matching the single-statement write
  * model (no cross-statement transactions under single-writer). */

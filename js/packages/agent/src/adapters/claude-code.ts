@@ -10,7 +10,7 @@
  *   user / ToolResultBlock                           -> tool-result
  *   result                                           -> session + (maybe) error
  *
- * `@anthropic-ai/claude-agent-sdk` is an optional peer dependency — install it
+ * `@anthropic-ai/claude-agent-sdk` is an optional peer dependency - install it
  * only to use this adapter (npm install @anthropic-ai/claude-agent-sdk).
  *
  * ## Auth modes
@@ -20,12 +20,12 @@
  * subscription login. The subprocess inherits this process's env and merges
  * options.env over it, so:
  *
- * - auth="api"          — pass apiKey (or the inherited ANTHROPIC_API_KEY);
+ * - auth="api"          - pass apiKey (or the inherited ANTHROPIC_API_KEY);
  *                         throws if neither is available.
- * - auth="subscription" — blank ANTHROPIC_API_KEY so an exported key can't
+ * - auth="subscription" - blank ANTHROPIC_API_KEY so an exported key can't
  *                         shadow the CLI's OAuth login; optionally pass
  *                         oauthToken (from `claude setup-token`).
- * - auth="inherit"      — (default) leave the environment alone.
+ * - auth="inherit"      - (default) leave the environment alone.
  */
 
 import { readFile } from "node:fs/promises";

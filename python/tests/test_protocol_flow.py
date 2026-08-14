@@ -72,8 +72,8 @@ async def test_full_turn(client):
 
 
 async def test_replay_folds_identically_to_live(client):
-    """Raw logs may differ after compaction (deltas dropped), but fold output —
-    what the user sees — must be identical (PROTOCOL.md 5/6)."""
+    """Raw logs may differ after compaction (deltas dropped), but fold output -
+    what the user sees - must be identical (PROTOCOL.md 5/6)."""
     from fairway.fold import fold_all
 
     session = (await client.post("/api/chat/sessions", json={})).json()["session"]
@@ -108,7 +108,7 @@ async def test_conflict_on_concurrent_send(client, monkeypatch):
     if r2.status_code == 409:
         assert r2.json()["detail"]["active_job_id"] == b1["job_id"]
     else:
-        # The first job may already have finished — that's a legal 202.
+        # The first job may already have finished - that's a legal 202.
         assert r2.status_code == 202
     # Drain both jobs so the store can close cleanly.
     await _read_sse(client, b1["job_id"])

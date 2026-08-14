@@ -1,5 +1,5 @@
 /**
- * ChatProvider — the invisible glue between ChatPanel, ChatInput, and any
+ * ChatProvider - the invisible glue between ChatPanel, ChatInput, and any
  * custom components. Renders nothing; runs useAgentChat (or adopts a
  * caller-supplied instance) and shares it via context.
  *
@@ -54,7 +54,7 @@ export interface ChatRow {
   items: StreamItem[];
   /** True only for the in-flight overlay row (replaced atomically on done). */
   live: boolean;
-  /** True while the assistant is working without visibly typing — turn just
+  /** True while the assistant is working without visibly typing - turn just
    * started, or a tool is running, or the model is between text runs. Render a
    * typing indicator after the items. */
   typing?: boolean;
@@ -62,7 +62,7 @@ export interface ChatRow {
   message?: Message;
 }
 
-/** Pure merge of the two render tracks — exported for tests and non-React use. */
+/** Pure merge of the two render tracks - exported for tests and non-React use. */
 export function buildRows(
   messages: Message[],
   liveItems: StreamItem[],
@@ -93,7 +93,7 @@ export function buildRows(
   return rows;
 }
 
-/** The merged, fold-reduced row list — persisted history plus the live overlay
+/** The merged, fold-reduced row list - persisted history plus the live overlay
  * (which appears as soon as a turn starts, before the first event arrives). */
 export function useChatRows(): ChatRow[] {
   const { messages, liveItems, streaming } = useChatContext();

@@ -53,7 +53,7 @@ jobs:
       - run: npm run build            # protocol, agent, client, server; publishable artifacts must build
       - run: npm test                 # all packages; includes the shared fold conformance vectors
       - run: npm run typecheck
-      # Recipes are copy-paste adapters, not shipped — but CI-guarded so they
+      # Recipes are copy-paste adapters, not shipped - but CI-guarded so they
       # don't rot: typecheck against the frameworks' real types, run mapping tests.
       - run: npm run typecheck -w fairway-recipes
       - run: npm test -w fairway-recipes

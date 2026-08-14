@@ -29,7 +29,7 @@ export interface ToolCallEvent extends EventBase {
   type: "tool_call";
   id: string;
   tool: string;
-  /** Server-derived display metadata — clients must not keep their own maps. */
+  /** Server-derived display metadata - clients must not keep their own maps. */
   kind: string;
   label: string;
   detail?: string;
@@ -73,7 +73,7 @@ export interface CancelledEvent extends EventBase {
   type: "cancelled";
   message_id?: string;
 }
-/** x_* extensions and unknown future types — opaque to the fold. */
+/** x_* extensions and unknown future types - opaque to the fold. */
 export interface OpaqueEvent extends EventBase {
   [key: string]: unknown;
 }

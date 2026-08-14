@@ -1,5 +1,5 @@
 /** Trivial reference runner for demos and tests: echoes the user message with
- * one fake tool call. Exercises the whole protocol path with no credentials —
+ * one fake tool call. Exercises the whole protocol path with no credentials -
  * the smallest possible example of the Runner contract. */
 
 import type { Runner } from "./types.js";

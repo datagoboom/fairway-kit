@@ -1,5 +1,5 @@
 /**
- * Manual smoke test for the Claude Code adapter — NOT run in CI.
+ * Manual smoke test for the Claude Code adapter - NOT run in CI.
  *
  * Drives one real turn against the Claude Agent SDK with your local credentials
  * and checks that the adapter maps it to a sane protocol-event sequence. This is
@@ -20,7 +20,7 @@ const auth = (process.env.FAIRWAY_AUTH as AuthMode) || "inherit";
 const model = process.env.FAIRWAY_MODEL || "claude-opus-4-8";
 
 async function main() {
-  console.log(`smoke: claude-code adapter — auth=${auth}, model=${model}`);
+  console.log(`smoke: claude-code adapter - auth=${auth}, model=${model}`);
   const runner = claudeCodeRunner({ auth, model, maxTurns: 2, permissionMode: "bypassPermissions" });
 
   const { emitted, result, error } = await drive(runner, {

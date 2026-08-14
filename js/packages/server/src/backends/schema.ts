@@ -7,7 +7,7 @@
  * share a timestamp and the random-uuid id makes the tiebreak non-deterministic.
  * The ordinal keeps replay order stable regardless of clock.
  *
- * JSON columns are TEXT-family everywhere (no native JSON type is needed — the
+ * JSON columns are TEXT-family everywhere (no native JSON type is needed - the
  * store serializes with JSON.stringify). Key columns must be bounded VARCHAR on
  * MySQL (TEXT is not indexable without a prefix length), so `idType` varies.
  */
