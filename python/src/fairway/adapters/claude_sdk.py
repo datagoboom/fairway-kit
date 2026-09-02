@@ -200,6 +200,12 @@ class ClaudeSDKRunner:
         coalescer = _Coalescer(emit, self.flush_interval_s, self.flush_min_chars)
         text_parts: list[str] = []
         error_result: str | None = None
+        # Token accounting, surfaced on TurnResult. The SDK reports usage on
+        # both AssistantMessage and ResultMessage; the ResultMessage figure is
+        # the turn total, so prefer it and fall back to accumulating the
+        # per-message numbers when it is absent.
+        usage_total: dict[str, Any] | None = None
+        usage_accum: dict[str, int] = {}
 
         async with factory(options) as client:
             ctx.graceful_stop = client.interrupt  # PROTOCOL.md 9, graceful phase
@@ -209,6 +215,11 @@ class ClaudeSDKRunner:
                     if isinstance(msg, StreamEvent):
                         await self._on_stream_event(msg, coalescer)
                     elif isinstance(msg, AssistantMessage):
+                        msg_usage = getattr(msg, "usage", None)
+                        if isinstance(msg_usage, dict):
+                            for k, v in msg_usage.items():
+                                if isinstance(v, int):
+                                    usage_accum[k] = usage_accum.get(k, 0) + v
                         for block in msg.content:
                             if isinstance(block, TextBlock):
                                 await coalescer.drop_pending("text")
@@ -234,6 +245,9 @@ class ClaudeSDKRunner:
                     elif isinstance(msg, ResultMessage):
                         if msg.session_id:
                             ctx.new_provider_session_id = msg.session_id
+                        result_usage = getattr(msg, "usage", None)
+                        if isinstance(result_usage, dict):
+                            usage_total = dict(result_usage)
                         if msg.is_error:
                             error_result = msg.result or f"agent error ({msg.subtype})"
             finally:
@@ -242,7 +256,10 @@ class ClaudeSDKRunner:
 
         if error_result is not None:
             raise RuntimeError(error_result)
-        return TurnResult(content="\n\n".join(p for p in text_parts if p))
+        return TurnResult(
+            content="\n\n".join(p for p in text_parts if p),
+            usage=usage_total if usage_total is not None else (usage_accum or None),
+        )
 
     # -- helpers -------------------------------------------------------------
 

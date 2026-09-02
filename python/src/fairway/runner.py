@@ -53,6 +53,19 @@ class TurnResult:
     content: str  # final markdown (derivable via fold.final_text if runner tracked events)
     reason: str | None = None
 
+    # Token accounting reported by the provider, when it reports any.
+    #
+    # Optional and additive: existing callers ignore it and nothing behaves
+    # differently. Deliberately NOT an event — usage is not part of the render
+    # stream, so events.schema.json and the pinned fold-vectors are untouched.
+    #
+    # Exists because a runner is the only place this data is visible, and
+    # without somewhere to put it a host that wants cost accounting has to
+    # reimplement the runner to see numbers the SDK already handed it. Shape is
+    # the provider's own, normalised only in that keys are provider-defined
+    # (e.g. {"input_tokens": int, "output_tokens": int}).
+    usage: dict[str, Any] | None = None
+
 
 class Runner(Protocol):
     async def __call__(self, ctx: TurnContext, emit: Emit) -> TurnResult: ...

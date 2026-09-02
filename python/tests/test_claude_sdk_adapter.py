@@ -48,6 +48,7 @@ class ToolResultBlock:
 class AssistantMessage:
     content: list
     model: str = "fake"
+    usage: dict | None = None
 
 
 @dataclass
@@ -72,6 +73,7 @@ class ResultMessage:
     num_turns: int = 1
     session_id: str = "sess-123"
     result: str | None = None
+    usage: dict | None = None
 
 
 class FakeOptions:
@@ -313,3 +315,54 @@ async def test_custom_tool_meta(fake_sdk):
     _, emitted, _ = await run(ClaudeSDKRunner(tool_meta=meta), make_ctx(), script)
     tc = next(e for e in emitted if e["type"] == "tool_call")
     assert tc["kind"] == "finance" and tc["label"] == "List bills"
+
+
+# -- usage accounting (TurnResult.usage) --------------------------------------
+
+
+async def test_usage_prefers_the_result_message_total(fake_sdk):
+    """ResultMessage carries the turn total — prefer it over summing messages.
+
+    Summing per-message usage AND the result total double-counts, which is the
+    mistake a host reimplementing this around the adapter would most likely make.
+    """
+    script = [
+        AssistantMessage(content=[TextBlock("hi")], usage={"input_tokens": 10, "output_tokens": 3}),
+        ResultMessage(usage={"input_tokens": 10, "output_tokens": 5}),
+    ]
+    _, _, result = await run(ClaudeSDKRunner(), make_ctx(), script)
+    assert result.usage == {"input_tokens": 10, "output_tokens": 5}
+
+
+async def test_usage_falls_back_to_accumulating_assistant_messages(fake_sdk):
+    """Some providers report per-message usage and no total."""
+    script = [
+        AssistantMessage(content=[TextBlock("a")], usage={"input_tokens": 5, "output_tokens": 1}),
+        AssistantMessage(content=[TextBlock("b")], usage={"input_tokens": 4, "output_tokens": 2}),
+        ResultMessage(),
+    ]
+    _, _, result = await run(ClaudeSDKRunner(), make_ctx(), script)
+    assert result.usage == {"input_tokens": 9, "output_tokens": 3}
+
+
+async def test_usage_is_none_when_the_provider_reports_none(fake_sdk):
+    """Absent is None, not {} — "not reported" and "reported zero" differ."""
+    script = [AssistantMessage(content=[TextBlock("hi")]), ResultMessage()]
+    _, _, result = await run(ClaudeSDKRunner(), make_ctx(), script)
+    assert result.usage is None
+
+
+async def test_usage_is_not_an_event(fake_sdk):
+    """Usage must not enter the render stream — it is not part of the protocol.
+
+    If it ever became an event, events.schema.json and the pinned fold-vectors
+    would need re-pinning, and every consumer of the fold would see it.
+    """
+    script = [
+        AssistantMessage(content=[TextBlock("hi")], usage={"input_tokens": 1, "output_tokens": 1}),
+        ResultMessage(usage={"input_tokens": 1, "output_tokens": 1}),
+    ]
+    _, emitted, _ = await run(ClaudeSDKRunner(), make_ctx(), script)
+    assert all("usage" not in ev for ev in emitted), (
+        "usage leaked into the event stream"
+    )
