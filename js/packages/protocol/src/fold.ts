@@ -52,6 +52,21 @@ export type StreamItem = TextItem | ToolItem | PermissionItem | ErrorItem | Opaq
 const TERMINAL = new Set(["done", "error", "cancelled"]);
 
 /** Pure: returns a new array, never mutates its inputs. */
+/**
+ * Fold an event we cannot faithfully interpret.
+ *
+ * Used when a field whose ABSENCE WOULD MISLEAD is missing — not merely when
+ * the schema marks a field required. "Required to emit" and "required to
+ * interpret" are different questions: a tool_call without `kind` is a correct
+ * card with less metadata, while a tool_call without `id` can never pair with
+ * its result and would render as an interrupted call that never existed.
+ * (paranoid-132)
+ */
+function opaque(items: StreamItem[], ev: ChatEvent): StreamItem[] {
+  items.push({ type: "opaque", event: { ...(ev as object) } } as StreamItem);
+  return items;
+}
+
 export function fold(prev: readonly StreamItem[], ev: ChatEvent): StreamItem[] {
   const items = prev.map((i) => ({ ...i })) as StreamItem[];
   const last = items[items.length - 1];
@@ -60,6 +75,7 @@ export function fold(prev: readonly StreamItem[], ev: ChatEvent): StreamItem[] {
   if (t === "message_start") return items;
 
   if (t === "text" || t === "thinking") {
+    if ((ev as Record<string, unknown>).content === undefined) return opaque(items, ev);
     if (last && last.type === t && (last as TextItem).open) {
       (last as TextItem).content += (ev as { content: string }).content;
     } else {
@@ -69,6 +85,7 @@ export function fold(prev: readonly StreamItem[], ev: ChatEvent): StreamItem[] {
   }
 
   if (t === "text_block") {
+    if ((ev as Record<string, unknown>).content === undefined) return opaque(items, ev);
     if (last && last.type === "text" && (last as TextItem).open) {
       (last as TextItem).content = (ev as { content: string }).content;
       (last as TextItem).open = false;
@@ -79,14 +96,19 @@ export function fold(prev: readonly StreamItem[], ev: ChatEvent): StreamItem[] {
   }
 
   if (t === "tool_call") {
+    const e0 = ev as Record<string, unknown>;
+    // `id` absent is MISLEADING (can never pair -> renders as a phantom
+    // interrupted call). tool/kind/label absent are merely INCOMPLETE and are
+    // tolerated, so migrated legacy events still fold to named cards.
+    if (e0.id === undefined) return opaque(items, ev);
     closeTrailing(items);
     const e = ev as Extract<ChatEvent, { type: "tool_call" }>;
     const item: ToolItem = {
       type: "tool",
       id: e.id,
-      tool: e.tool,
-      kind: e.kind,
-      label: e.label,
+      tool: e.tool ?? null,
+      kind: e.kind ?? null,
+      label: e.label ?? null,
       status: "running",
     };
     if (e.detail !== undefined) item.detail = e.detail;
@@ -96,6 +118,12 @@ export function fold(prev: readonly StreamItem[], ev: ChatEvent): StreamItem[] {
 
   if (t === "tool_result") {
     const e = ev as Extract<ChatEvent, { type: "tool_result" }>;
+    const e0 = ev as Record<string, unknown>;
+    // paranoid-132: this line used to read `e.ok ? "ok" : "err"`, so a
+    // tool_result with NO `ok` field rendered as a red failure on a tool that
+    // may well have SUCCEEDED — inventing a verdict from an absent one. An
+    // outcome we do not know is not an outcome we may guess.
+    if (e0.id === undefined || e0.ok === undefined) return opaque(items, ev);
     const status = e.ok ? "ok" : "err";
     for (let i = items.length - 1; i >= 0; i--) {
       const it = items[i];
@@ -113,14 +141,15 @@ export function fold(prev: readonly StreamItem[], ev: ChatEvent): StreamItem[] {
   }
 
   if (t === "permission_request") {
+    if ((ev as Record<string, unknown>).id === undefined) return opaque(items, ev);
     closeTrailing(items);
     const e = ev as Extract<ChatEvent, { type: "permission_request" }>;
     const item: PermissionItem = {
       type: "permission",
       id: e.id,
-      tool: e.tool,
-      kind: e.kind,
-      label: e.label,
+      tool: e.tool ?? null,
+      kind: e.kind ?? null,
+      label: e.label ?? null,
       status: "pending",
     };
     if (e.detail !== undefined) item.detail = e.detail;
@@ -129,6 +158,8 @@ export function fold(prev: readonly StreamItem[], ev: ChatEvent): StreamItem[] {
   }
 
   if (t === "permission_resolved") {
+    const p0 = ev as Record<string, unknown>;
+    if (p0.id === undefined || p0.decision === undefined) return opaque(items, ev);
     const e = ev as Extract<ChatEvent, { type: "permission_resolved" }>;
     const status = e.decision === "deny" ? "denied" : "allowed";
     for (let i = items.length - 1; i >= 0; i--) {

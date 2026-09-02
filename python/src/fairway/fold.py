@@ -15,6 +15,21 @@ from .events import TERMINAL_TYPES
 Item = dict[str, Any]
 
 
+def _opaque(items: list[Item], ev: dict[str, Any]) -> list[Item]:
+    """Fold an event we cannot faithfully interpret.
+
+    Used when a field whose ABSENCE WOULD MISLEAD is missing — not merely when
+    the schema marks a field required. "Required to emit" and "required to
+    interpret" are different questions: a tool_call without `kind` is a correct
+    card with less metadata, while a tool_call without `id` can never pair with
+    its result and would render as an interrupted call that never existed.
+    Opaque says "malformed" and means it, instead of drawing something
+    plausible and wrong. (paranoid-132)
+    """
+    items.append({"type": "opaque", "event": dict(ev)})
+    return items
+
+
 def fold(items: list[Item], ev: dict[str, Any]) -> list[Item]:
     """Pure: returns a new list; never mutates inputs."""
     items = [dict(i) for i in items]
@@ -24,6 +39,12 @@ def fold(items: list[Item], ev: dict[str, Any]) -> list[Item]:
         return items
 
     if t in ("text", "thinking"):
+        # A text run with no content cannot be rendered at all — there is
+        # nothing to show. Falling through would append an item drawing the
+        # empty string, which reads as "the model said nothing" rather than
+        # "this event is malformed". (paranoid-132)
+        if "content" not in ev:
+            return _opaque(items, ev)
         if items and items[-1].get("type") == t and items[-1].get("open"):
             items[-1]["content"] += ev["content"]
         else:
@@ -31,6 +52,8 @@ def fold(items: list[Item], ev: dict[str, Any]) -> list[Item]:
         return items
 
     if t == "text_block":
+        if "content" not in ev:
+            return _opaque(items, ev)
         if items and items[-1].get("type") == "text" and items[-1].get("open"):
             items[-1]["content"] = ev["content"]
             items[-1]["open"] = False
@@ -39,13 +62,22 @@ def fold(items: list[Item], ev: dict[str, Any]) -> list[Item]:
         return items
 
     if t == "tool_call":
+        # `id` is MISLEADING when absent: the item can never pair with its
+        # tool_result, so it renders as an orphan — which reads as
+        # "interrupted" when the truth is "malformed".
+        # tool/kind/label absent are merely INCOMPLETE: the card is correct,
+        # just carrying less metadata. Tolerated, because migrated legacy
+        # events legitimately lack kind/label (no-synthesis) and must still
+        # fold to real, named, correctly-paired cards. (paranoid-132)
+        if "id" not in ev:
+            return _opaque(items, ev)
         _close_trailing(items)
         item: Item = {
             "type": "tool",
             "id": ev["id"],
-            "tool": ev["tool"],
-            "kind": ev["kind"],
-            "label": ev["label"],
+            "tool": ev.get("tool"),
+            "kind": ev.get("kind"),
+            "label": ev.get("label"),
             "status": "running",
         }
         if "detail" in ev:
@@ -54,6 +86,12 @@ def fold(items: list[Item], ev: dict[str, Any]) -> list[Item]:
         return items
 
     if t == "tool_result":
+        # `ok` absent would force us to invent a verdict. Defaulting it either
+        # way puts a confident ok/err on a tool whose outcome we do not know —
+        # the same fabrication as fold.ts's `e.ok ? "ok" : "err"`. `id` absent
+        # cannot be attached to any call. Both are MISLEADING. (paranoid-132)
+        if "id" not in ev or "ok" not in ev:
+            return _opaque(items, ev)
         status = "ok" if ev["ok"] else "err"
         for item in reversed(items):
             if item.get("type") == "tool" and item.get("id") == ev["id"] and item.get("status") == "running":
@@ -70,13 +108,15 @@ def fold(items: list[Item], ev: dict[str, Any]) -> list[Item]:
         return items
 
     if t == "permission_request":
+        if "id" not in ev:
+            return _opaque(items, ev)
         _close_trailing(items)
         item = {
             "type": "permission",
             "id": ev["id"],
-            "tool": ev["tool"],
-            "kind": ev["kind"],
-            "label": ev["label"],
+            "tool": ev.get("tool"),
+            "kind": ev.get("kind"),
+            "label": ev.get("label"),
             "status": "pending",
         }
         if "detail" in ev:
@@ -85,6 +125,8 @@ def fold(items: list[Item], ev: dict[str, Any]) -> list[Item]:
         return items
 
     if t == "permission_resolved":
+        if "id" not in ev or "decision" not in ev:
+            return _opaque(items, ev)
         decision = ev["decision"]
         status = "denied" if decision == "deny" else "allowed"
         for item in reversed(items):
@@ -109,7 +151,7 @@ def fold(items: list[Item], ev: dict[str, Any]) -> list[Item]:
             if item.get("type") == "permission" and item.get("status") == "pending":
                 item["status"] = "interrupted"
         if t == "error":
-            items.append({"type": "error", "message": ev["message"]})
+            items.append({"type": "error", "message": ev.get("message", "")})
         return items
 
     # Extension (x_*) and unknown types: opaque, rendered/handled by the app.
