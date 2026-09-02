@@ -19,7 +19,7 @@ from typing import Any, AsyncIterator, Awaitable, Callable
 import time
 
 from . import events as E
-from .fold import compactable_delta_seqs, final_text, fold_all
+from .fold import compactable_delta_seqs, final_text
 from .runner import Runner, TurnContext
 from .store import Store
 
@@ -65,9 +65,25 @@ class JobRegistry:
                 (e["message_id"] for e in evs if e.get("type") == "message_start"), None
             )
             if message_id:
-                items = fold_all(evs)
                 content = final_text(evs)
-                if content or any(i.get("type") == "tool" for i in items):
+                # Activity is detected PRE-FOLD, on the raw event log, because
+                # this branch decides whether to DELETE a message and the fold
+                # is an interpreter that can fail to recognise a producer.
+                #
+                # The previous predicate was `content or any(item.type == "tool"
+                # for item in fold_all(evs))`. Both halves read the fold's
+                # OUTPUT, so any event stream the fold cannot interpret — a
+                # non-canonical vocabulary, or now anything that folds to
+                # `opaque` — looks identical to "this turn did nothing", and a
+                # crashed tool-only turn was silently DELETED. That is data loss
+                # caused by an interpretation gap, and it is precisely the
+                # producer drift paranoid-132 exists to catch rather than punish.
+                #
+                # An event log with anything beyond message_start is evidence of
+                # work, whether or not we can render it. Deleting is the
+                # irreversible option, so it needs the stronger justification.
+                has_activity = any(e.get("type") != "message_start" for e in evs)
+                if content or has_activity:
                     await self._store.finalize_assistant(message_id, content, evs)
                 else:
                     await self._store.delete_message(message_id)

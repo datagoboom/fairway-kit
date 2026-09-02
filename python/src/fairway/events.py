@@ -7,9 +7,18 @@ time (Store.append_event), never by producers.
 
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 PROTOCOL_VERSION = "0.3"
+
+
+class UnknownEventTypeWarning(UserWarning):
+    """A producer emitted a type that is neither core nor `x_`-prefixed.
+
+    Its own category so callers can escalate it (`warnings.simplefilter("error",
+    UnknownEventTypeWarning)`) or silence it without touching unrelated warnings.
+    """
 
 CORE_TYPES = frozenset(
     {
@@ -119,12 +128,38 @@ def is_terminal(ev: Event) -> bool:
     return ev.get("type") in TERMINAL_TYPES
 
 
-def validate(ev: Event) -> None:
+def validate(ev: Event, *, strict: bool = False) -> None:
     """Cheap structural check for producer mistakes. Full validation is the JSON
-    Schema in protocol/events.schema.json (used in tests, not on the hot path)."""
+    Schema in protocol/events.schema.json (used in tests, not on the hot path).
+
+    NOTE ON THE ASYMMETRY WITH `fold` — it is deliberate, not an inconsistency.
+    This function is the EMIT side and is strict: a tool_call must carry
+    kind/label. `fold` is the READ side and tolerates their absence, because it
+    reads history that legitimately lacks them (events migrated from an older
+    vocabulary, where synthesising a label would invent one). Strict in what you
+    emit, tolerant in what you accept. "Required to emit" and "required to
+    interpret" are different questions; conflating them is what produced the
+    paranoid-130/-132 contradiction.
+    """
     t = ev.get("type")
     if not isinstance(t, str) or not t:
         raise ValueError(f"event missing type: {ev!r}")
+    # PROTOCOL.md section 8: extension types SHOULD be `x_`-prefixed. Nothing
+    # enforced it, so a producer emitting a bare unknown type (our own
+    # `{"type": "tool"}` where the protocol says `tool_call`) passed validation
+    # silently for months and folded to `opaque` — the drift was invisible at
+    # the point of writing and only surfaced as missing tool cards in the UI.
+    # Warn by default rather than raise: this ships to existing callers whose
+    # logs would otherwise start throwing on data they already store. `strict`
+    # is for tests and new producers, which should fail loudly.
+    if t not in CORE_TYPES and not t.startswith("x_"):
+        msg = (
+            f"unknown event type {t!r} is not a core type and lacks the 'x_' "
+            f"extension prefix (PROTOCOL.md 8); it will fold to `opaque`: {ev!r}"
+        )
+        if strict:
+            raise ValueError(msg)
+        warnings.warn(msg, UnknownEventTypeWarning, stacklevel=2)
     if t in {"text", "text_block", "thinking"} and not isinstance(ev.get("content"), str):
         raise ValueError(f"{t} event missing content: {ev!r}")
     if t == "tool_call" and not all(isinstance(ev.get(k), str) for k in ("id", "tool", "kind", "label")):
