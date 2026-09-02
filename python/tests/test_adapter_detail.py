@@ -34,9 +34,9 @@ def test_rendering_is_faithful_not_invented():
 def test_truncation_is_marked_never_silent():
     """The -128 lesson. The old harness cut at 120 chars with no marker, so
     ~70% of arguments rendered as though complete."""
-    big = {"blob": "x" * 5000}
+    big = {"blob": "x" * 9000}
     d = _default_detail(big)
-    assert len(d) < 400
+    assert len(d) < _DETAIL_CAP + 100
     assert "…" in d and "more chars" in d   # the omission is legible
     assert "+" in d                          # and quantified
 

@@ -46,7 +46,21 @@ from ..runner import Emit, TurnContext, TurnResult
 # Cap for the generic argument rendering below. Bounded because tool_call events
 # are PERSISTED and, under a raw-events wire contract, re-sent on every history
 # load — an unbounded arg dump (a file write, a pasted blob) would bloat both.
-_DETAIL_CAP = 200
+#
+# WHY 2000 AND NOT A MEASURED VALUE. I tried to set this from real data and the
+# measurement was worthless: across 410 stored tool_calls the detail lengths ran
+# min 2, median 120, p99 120, MAX 120 — because the previous emitter had already
+# hard-truncated every one of them at 120. The distribution is censored at
+# exactly the quantity I was trying to measure past, so "0% would truncate at
+# 200" said nothing about real arguments and everything about the old cap. (We
+# know ~70% of them WERE truncated: 288/409 sat exactly at 120.)
+#
+# So this is chosen to be generous rather than fitted: large enough that a
+# realistic shell command, path list or JSON body passes through whole, small
+# enough to stop a pasted file body. When genuinely uncensored data exists it
+# can be revisited — but a number fitted to clipped data would have looked
+# evidence-based while being an artefact of the bug we are fixing.
+_DETAIL_CAP = 2000
 
 
 def _default_detail(inp: Any) -> str | None:
