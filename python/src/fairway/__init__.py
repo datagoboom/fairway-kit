@@ -4,6 +4,7 @@ from . import events
 from .backends import Backend, MySQLBackend, PostgresBackend, SQLiteBackend, backend_from_url
 from .events import PROTOCOL_VERSION, TERMINAL_TYPES
 from .fold import fold, fold_all
+from .health import FoldHealth, assert_folds_cleanly, fold_health
 from .jobs import JobRegistry
 from .router import mount_agent_chat
 from .runner import Emit, Runner, TurnContext, TurnResult
@@ -15,6 +16,9 @@ __all__ = [
     "TERMINAL_TYPES",
     "fold",
     "fold_all",
+    "FoldHealth",
+    "fold_health",
+    "assert_folds_cleanly",
     "JobRegistry",
     "mount_agent_chat",
     "Emit",
