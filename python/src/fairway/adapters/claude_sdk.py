@@ -35,12 +35,37 @@ merges ClaudeAgentOptions.env over it, so:
 
 from __future__ import annotations
 
+import json
 import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Literal
 
 from .. import events as E
 from ..runner import Emit, TurnContext, TurnResult
+
+# Cap for the generic argument rendering below. Bounded because tool_call events
+# are PERSISTED and, under a raw-events wire contract, re-sent on every history
+# load — an unbounded arg dump (a file write, a pasted blob) would bloat both.
+_DETAIL_CAP = 200
+
+
+def _default_detail(inp: Any) -> str | None:
+    """Render tool arguments for display when no per-tool formatter is set.
+
+    Truncation is MARKED, never silent. A chopped command rendered as though it
+    were whole is a lie by omission — the operator cannot tell that what they
+    are reading is not what ran. The count of dropped characters is included so
+    the omission is legible rather than merely hinted at.
+    """
+    if not isinstance(inp, dict) or not inp:
+        return None
+    try:
+        s = json.dumps(inp, default=str, separators=(",", ":"), sort_keys=True)
+    except Exception:  # noqa: BLE001 — detail is cosmetic, never fatal
+        return None
+    if len(s) <= _DETAIL_CAP:
+        return s
+    return f"{s[:_DETAIL_CAP]}… (+{len(s) - _DETAIL_CAP} more chars)"
 
 AuthMode = Literal["api", "subscription", "inherit"]
 
@@ -302,6 +327,21 @@ class ClaudeSDKRunner:
                 detail = meta.detail(block.input)
             except Exception:  # noqa: BLE001 - detail is cosmetic, never fatal
                 detail = None
+        if detail is None:
+            # Fall back to a generic rendering of the arguments.
+            #
+            # Without this, an adopter who registers no per-tool `detail`
+            # callback gets tool_call events carrying no arguments at all, and
+            # the operator can see WHICH tool ran but not WITH WHAT. That is a
+            # silent capability loss: the cards render, the counts pass, and
+            # only someone reading an actual card notices the args are gone.
+            # (Found by Claudia on the paranoid-130 deploy — migrated history
+            # showed args on 204/204 cards while every new turn showed none.)
+            #
+            # This is a faithful rendering of the real arguments, not invented
+            # metadata: unlike a synthesised `label`, it asserts nothing that
+            # was not in the call.
+            detail = _default_detail(block.input)
         return E.tool_call(block.id, name, meta.kind, meta.label, detail=detail)
 
     async def _on_stream_event(self, msg: Any, coalescer: _Coalescer) -> None:
