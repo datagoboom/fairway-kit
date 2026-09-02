@@ -59,6 +59,12 @@ class Store:
     async def delete_session(self, session_id: str) -> None:
         await self.backend.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
 
+    async def rename_session(self, session_id: str, name: str) -> dict[str, Any] | None:
+        await self.backend.execute(
+            "UPDATE sessions SET name = ? WHERE id = ?", (name, session_id)
+        )
+        return await self.get_session(session_id)
+
     async def set_provider_session_id(self, session_id: str, provider_session_id: str) -> None:
         await self.backend.execute(
             "UPDATE sessions SET provider_session_id = ? WHERE id = ?",

@@ -32,6 +32,10 @@ class CreateSessionBody(BaseModel):
     name: str | None = None
 
 
+class RenameSessionBody(BaseModel):
+    name: str
+
+
 class PermissionBody(BaseModel):
     request_id: str
     decision: Literal["allow", "allow_session", "deny"]
@@ -60,6 +64,12 @@ def build_router(
     @r.delete("/sessions/{session_id}", status_code=204)
     async def delete_session(session_id: str) -> None:
         await store.delete_session(session_id)
+
+    @r.patch("/sessions/{session_id}")
+    async def rename_session(session_id: str, body: RenameSessionBody) -> dict[str, Any]:
+        if not await store.get_session(session_id):
+            raise HTTPException(404, "session not found")
+        return {"session": await store.rename_session(session_id, body.name)}
 
     @r.get("/sessions/{session_id}/messages")
     async def list_messages(session_id: str, limit: int = 200) -> dict[str, Any]:
