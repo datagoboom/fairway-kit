@@ -261,7 +261,28 @@ class JobRegistry:
         live = self._live.get(job_id)
         if live is None:
             job = await self._store.get_job(job_id)
-            return job["status"] if job else "unknown"
+            if not job:
+                return "unknown"
+            if job["status"] == "running":
+                # Zombie: DB says running but no live task owns it. The owning
+                # asyncio task died without updating the DB (crash, SIGKILL,
+                # unhandled edge in the adapter). Reap it now so the caller
+                # (and the frontend's idle poll) stop treating it as active.
+                log.warning("reaping zombie job %s (running in DB, not in _live)", job_id)
+                await self._store.set_job_status(job_id, "cancelled")
+                await self._store.append_event(
+                    job_id, E.cancelled(
+                        # best-effort: grab the message_id from the event log
+                        next(
+                            (ev["message_id"]
+                             for ev in await self._store.get_events(job_id, since=0)
+                             if ev.get("type") == "message_start"),
+                            None,
+                        )
+                    )
+                )
+                return "cancelled"
+            return job["status"]
         # A held permission gate must never make a turn unstoppable: resolve
         # all pending requests as deny before interrupting (PROTOCOL.md).
         for future in live.pending_permissions.values():
