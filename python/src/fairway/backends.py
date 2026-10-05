@@ -137,20 +137,29 @@ class SQLiteBackend:
     def __init__(self, path: str):
         self._path = path
         self._db: Any = None
+        self._reader: Any = None
         import asyncio
 
-        self._lock = asyncio.Lock()  # aiosqlite is single-connection; guard its use
+        self._lock = asyncio.Lock()  # guard the write connection only
 
     async def open(self) -> None:
         import aiosqlite
 
+        # Write connection (locked).
         self._db = await aiosqlite.connect(self._path)
         self._db.row_factory = aiosqlite.Row
         await self._db.execute("PRAGMA journal_mode=WAL")
         await self._db.execute("PRAGMA foreign_keys=ON")
         await self._db.commit()
+        # Read connection — WAL allows concurrent readers on a separate connection.
+        self._reader = await aiosqlite.connect(self._path)
+        self._reader.row_factory = aiosqlite.Row
+        await self._reader.execute("PRAGMA query_only=ON")  # safety: prevent accidental writes
 
     async def close(self) -> None:
+        if self._reader:
+            await self._reader.close()
+            self._reader = None
         if self._db:
             await self._db.close()
             self._db = None
@@ -172,15 +181,13 @@ class SQLiteBackend:
             await self._db.commit()
 
     async def fetchone(self, sql: str, params: Sequence[Any] = ()) -> dict[str, Any] | None:
-        async with self._lock:
-            cur = await self._db.execute(sql, tuple(params))
-            row = await cur.fetchone()
+        cur = await self._reader.execute(sql, tuple(params))
+        row = await cur.fetchone()
         return dict(row) if row else None
 
     async def fetchall(self, sql: str, params: Sequence[Any] = ()) -> list[dict[str, Any]]:
-        async with self._lock:
-            cur = await self._db.execute(sql, tuple(params))
-            rows = await cur.fetchall()
+        cur = await self._reader.execute(sql, tuple(params))
+        rows = await cur.fetchall()
         return [dict(r) for r in rows]
 
 
