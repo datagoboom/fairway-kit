@@ -93,6 +93,9 @@ export class AgentChatClient {
   listSessions(): Promise<{ sessions: Session[] }> {
     return this.req("GET", "/sessions");
   }
+  renameSession(id: string, name: string): Promise<{ session: Session }> {
+    return this.req("PATCH", `/sessions/${id}`, { name });
+  }
   deleteSession(id: string): Promise<void> {
     return this.req("DELETE", `/sessions/${id}`);
   }
