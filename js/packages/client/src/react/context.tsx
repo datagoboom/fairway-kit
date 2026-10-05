@@ -30,10 +30,9 @@ export function ChatProvider({ client, sessionId, chat, children, ...opts }: Cha
   if (!chat && !client) {
     throw new Error("ChatProvider needs either `chat` (controlled) or `client` + `sessionId`");
   }
-  // Branch is stable for the life of the provider (controlled vs uncontrolled),
-  // so the conditional hook call is safe in practice; the null client path is
-  // never taken when `chat` is absent (guarded above).
-  const owned = useAgentChat(client!, chat ? null : (sessionId ?? null), opts);
+  // Controlled mode still runs the hook (hooks can't be conditional) but with a
+  // null client/session, so it stays fully inert.
+  const owned = useAgentChat(chat ? null : client!, chat ? null : (sessionId ?? null), opts);
   const value = chat ?? owned;
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
 }

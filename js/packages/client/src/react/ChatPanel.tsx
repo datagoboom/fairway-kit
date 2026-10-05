@@ -231,6 +231,7 @@ function DefaultError({ item }: ItemComponentProps<ErrorItem>) {
  * links. Exported for reuse inside custom bubbles. */
 export function MessageAttachments({ attachments }: { attachments: Attachment[] }) {
   const { client } = useChatContext();
+  if (!client) return null;
   return (
     <div data-fairway-attachments="">
       {attachments.map((a) =>

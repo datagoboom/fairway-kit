@@ -49,7 +49,7 @@ export function ChatInput({
 
   const submit = useCallback(() => {
     const t = text.trim();
-    if ((!t && files.length === 0) || disabled || !sessionId) return;
+    if ((!t && files.length === 0) || disabled || !client || !sessionId) return;
     const pending = files;
     setText("");
     setFiles([]);

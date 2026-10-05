@@ -20,7 +20,7 @@ export interface UseAgentChatOptions {
 }
 
 export function useAgentChat(
-  client: AgentChatClient,
+  client: AgentChatClient | null,
   sessionId: string | null,
   opts: UseAgentChatOptions = {}
 ) {
@@ -52,6 +52,7 @@ export function useAgentChat(
 
   const attach = useCallback(
     (jobId: string, since = 0) => {
+      if (!client) return;
       abortRef.current?.();
       setActiveJobId(jobId);
       setStreaming(true);
@@ -84,7 +85,7 @@ export function useAgentChat(
       // Deterministic handoff: PROTOCOL.md 7 guarantees the row is committed
       // before the terminal event, so one fetch suffices - retrying is a server bug.
       const sid = sessionRef.current;
-      if (sid) {
+      if (sid && client) {
         const { messages: fresh } = await client.listMessages(sid);
         if (sessionRef.current !== sid) return; // session switched mid-fetch
         if (messageId && !fresh.some((m) => m.id === messageId)) {
@@ -101,6 +102,7 @@ export function useAgentChat(
 
   // One-time (per client) protocol handshake: warn on version skew.
   useEffect(() => {
+    if (!client) return;
     void client.checkProtocol().then((warning) => {
       if (warning) console.warn(warning);
     });
@@ -113,7 +115,7 @@ export function useAgentChat(
     setLiveItems([]);
     setStreaming(false);
     setActiveJobId(null);
-    if (!sessionId) return;
+    if (!client || !sessionId) return;
     let stale = false;
     void (async () => {
       const { messages: hist } = await client.listMessages(sessionId);
@@ -131,6 +133,7 @@ export function useAgentChat(
 
   const send = useCallback(
     async (content: string, attachments?: Attachment[]) => {
+      if (!client) throw new Error("no client (controlled ChatProvider without a chat instance?)");
       if (!sessionId) throw new Error("no session selected");
       // Optimistic user message; replaced by the persisted row on terminal handoff.
       const optimistic: Message = {
@@ -161,13 +164,14 @@ export function useAgentChat(
   );
 
   const stop = useCallback(async () => {
-    if (activeJobId) await client.stop(activeJobId);
+    if (activeJobId && client) await client.stop(activeJobId);
     // No client-side force-unlock timer: PROTOCOL.md 9 guarantees a terminal
     // event within stop_grace, which unlocks via handleTerminal.
   }, [client, activeJobId]);
 
   const respondPermission = useCallback(
     async (requestId: string, decision: PermissionDecision) => {
+      if (!client) throw new Error("no client (controlled ChatProvider without a chat instance?)");
       if (!activeJobId) throw new Error("no active job to resolve a permission for");
       await client.resolvePermission(activeJobId, requestId, decision);
     },
