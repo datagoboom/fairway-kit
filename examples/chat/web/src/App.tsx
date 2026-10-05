@@ -559,7 +559,7 @@ function Composer({ disabled }: { disabled: boolean }) {
 
   const submit = () => {
     const t = text.trim();
-    if ((!t && files.length === 0) || busy || disabled || !sessionId) return;
+    if ((!t && files.length === 0) || busy || disabled || !client || !sessionId) return;
     const pending = files;
     setText("");
     setFiles([]);
