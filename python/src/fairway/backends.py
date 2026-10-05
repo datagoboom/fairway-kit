@@ -151,7 +151,7 @@ class SQLiteBackend:
         await self._db.execute("PRAGMA journal_mode=WAL")
         await self._db.execute("PRAGMA foreign_keys=ON")
         await self._db.commit()
-        # Read connection — WAL allows concurrent readers on a separate connection.
+        # Read connection - WAL allows concurrent readers on a separate connection.
         self._reader = await aiosqlite.connect(self._path)
         self._reader.row_factory = aiosqlite.Row
         await self._reader.execute("PRAGMA query_only=ON")  # safety: prevent accidental writes
