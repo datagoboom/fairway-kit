@@ -73,6 +73,14 @@ export interface ClaudeCodeConfig {
   // Safe by default: strict mode stops the CLI loading user/project MCP servers,
   // which would silently widen the agent's tool surface beyond what the app declared.
   strictMcpConfig?: boolean;
+  // Which filesystem setting sources to load. Omit → SDK/CLI default (all
+  // sources, incl. global ~/.claude). Pass ['project'] to load only cwd's
+  // .claude + CLAUDE.md (no global leakage); pass [] to disable entirely.
+  settingSources?: string[];
+  // Skills to enable: 'all', a name list, or omit for the CLI default. Skills
+  // are a context filter, not a sandbox — their files stay readable via
+  // Read/Bash, so never put secrets in skill files.
+  skills?: string[] | "all";
   env?: Record<string, string>; // extra subprocess env
   flushIntervalMs?: number;
   flushMinChars?: number;
@@ -114,6 +122,8 @@ async function* claudeStream(
     cwd: config.cwd,
     mcpServers: config.mcpServers ?? {},
     strictMcpConfig: config.strictMcpConfig ?? true,
+    ...(config.settingSources !== undefined ? { settingSources: config.settingSources } : {}),
+    ...(config.skills !== undefined ? { skills: config.skills } : {}),
     systemPrompt: config.systemPrompt ? config.systemPrompt(ctx) : undefined,
     resume: ctx.providerSessionId ?? undefined,
     includePartialMessages: true, // stream_event deltas for live typing
