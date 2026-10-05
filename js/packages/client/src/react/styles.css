@@ -70,6 +70,13 @@
 [data-fairway-item="tool"][data-status="ok"] { border-color: #3a5a3a; }
 [data-fairway-item="tool"][data-status="err"] { border-color: #6a3a3a; }
 [data-fairway-item="tool"][data-status="interrupted"] { border-color: #6a5a3a; }
+/* The label never shrinks or wraps; long detail/summary text must not be able
+   to squeeze it into letter-per-line wrapping (which also balloons the pill
+   past its container, since the ellipsis below needs min-width: 0 to engage). */
+[data-fairway-tool-label] {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
 /* status dot - pure CSS, no glyphs */
 [data-fairway-tool-label]::before {
   content: "";
@@ -98,6 +105,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0; /* flex children refuse to shrink below content without this */
 }
 [data-fairway-tool-detail]::before,
 [data-fairway-tool-summary]::before {
