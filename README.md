@@ -195,6 +195,14 @@ The components are headless. They render semantic DOM with stable
 `data-fairway-*` attributes and no styling opinions. Use the optional
 stylesheet, restyle via CSS, or replace rendering entirely:
 
+- Retheme the default stylesheet with CSS custom properties. Every color in it
+  reads a `--fw-*` token (no literal colors in rules), so redefine any subset on
+  any ancestor (`:root`, a wrapper, or `[data-fairway-panel]`) — the defaults are
+  a self-consistent dark look but the full set is light-theme-ready. Tokens:
+  `--fw-bg`, `--fw-bubble-assistant`, `--fw-bubble-user`, `--fw-surface`,
+  `--fw-input-bg`, `--fw-accent`, `--fw-code-bg`, `--fw-pre-bg`, `--fw-border`,
+  `--fw-border-strong`, `--fw-text-dim`, `--fw-link`, `--fw-ok`/`--fw-ok-fg`,
+  `--fw-err`/`--fw-error`, `--fw-warn`/`--fw-warn-fg`, `--fw-neutral-fg`, `--fw-stop`.
 - Per-item-type overrides: `<ChatPanel components={{ Text: MarkdownText, Tool: MyChip }} />`.
   A markdown renderer ships at `fairway-kit/react/markdown`, and the map also
   accepts protocol extension event types as keys.

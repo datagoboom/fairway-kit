@@ -1,17 +1,41 @@
 /* Optional default look for the fairway chat components.
  * Import from your app:  import "fairway-kit/react/styles.css";
- * Everything targets the stable data-* attributes, so overriding any part of
- * it from app CSS needs no extra specificity tricks. Colors derive from a few
- * custom properties - retheme by redefining them on any ancestor. */
+ *
+ * Everything targets stable data-* attributes, and EVERY color derives from a
+ * --fw-* custom property (no literal colors in rules). Retheme by redefining
+ * any of the tokens below on any ancestor - :root, a wrapper, or
+ * [data-fairway-panel]. Defaults live on :root (not on the panel), so an app
+ * setting a token on :root wins by source order; the shipped defaults form a
+ * self-consistent dark look, but the full set is light-theme-ready. */
+
+:root {
+  /* surfaces */
+  --fw-bg: transparent;              /* panel background */
+  --fw-bubble-assistant: #1a1e22;    /* assistant message bubble */
+  --fw-bubble-user: #2b4a66;         /* user message bubble */
+  --fw-surface: #14181c;             /* sunken chips: tool pill, attachments, permission card */
+  --fw-input-bg: #16191c;            /* composer text field */
+  --fw-accent: #22303c;              /* buttons: send, attach, jump, permission actions */
+  --fw-code-bg: #262b31;             /* inline code */
+  --fw-pre-bg: #0b0d0f;              /* code block */
+  /* lines */
+  --fw-border: #2a2e33;              /* default borders */
+  --fw-border-strong: #3a4a5a;       /* tool pill border, blockquote rule */
+  /* text */
+  --fw-text-dim: #8a93a0;            /* muted text: thinking, details, timestamps */
+  --fw-link: #7ab3e0;               /* links, attachment file chips */
+  /* status (border = muted, fg = vivid dot/text) */
+  --fw-ok: #3a5a3a;                  /* success border (tool ok, permission allowed, live bubble) */
+  --fw-ok-fg: #5aa46a;               /* success dot */
+  --fw-err: #6a3a3a;                 /* error border (tool err, permission denied) */
+  --fw-error: #e07a7a;               /* error text + dot */
+  --fw-warn: #6a5a3a;                /* warning/pending border (interrupted, permission prompt) */
+  --fw-warn-fg: #c9a24a;             /* running/interrupted dot */
+  --fw-neutral-fg: #6a7684;          /* idle status dot */
+  --fw-stop: #5c2b2b;                /* stop button */
+}
 
 [data-fairway-panel] {
-  --fw-bg: transparent;
-  --fw-bubble-assistant: #1a1e22;
-  --fw-bubble-user: #2b4a66;
-  --fw-border: #2a2e33;
-  --fw-text-dim: #8a93a0;
-  --fw-error: #e07a7a;
-  --fw-accent: #22303c;
   background: var(--fw-bg);
   font-size: 14px;
   line-height: 1.5;
@@ -46,7 +70,7 @@
   background: var(--fw-bubble-user);
 }
 [data-fairway-message][data-live] [data-fairway-bubble] {
-  border-color: #3a5a3a;
+  border-color: var(--fw-ok);
 }
 
 [data-fairway-item="thinking"] {
@@ -63,13 +87,13 @@
   padding: 3px 10px;
   border-radius: 999px;
   font-size: 12px;
-  background: #14181c;
-  border: 1px solid #3a4a5a;
+  background: var(--fw-surface);
+  border: 1px solid var(--fw-border-strong);
   max-width: 100%;
 }
-[data-fairway-item="tool"][data-status="ok"] { border-color: #3a5a3a; }
-[data-fairway-item="tool"][data-status="err"] { border-color: #6a3a3a; }
-[data-fairway-item="tool"][data-status="interrupted"] { border-color: #6a5a3a; }
+[data-fairway-item="tool"][data-status="ok"] { border-color: var(--fw-ok); }
+[data-fairway-item="tool"][data-status="err"] { border-color: var(--fw-err); }
+[data-fairway-item="tool"][data-status="interrupted"] { border-color: var(--fw-warn); }
 /* The label never shrinks or wraps; long detail/summary text must not be able
    to squeeze it into letter-per-line wrapping (which also balloons the pill
    past its container, since the ellipsis below needs min-width: 0 to engage). */
@@ -85,16 +109,16 @@
   height: 7px;
   border-radius: 50%;
   margin-right: 7px;
-  background: #6a7684;
+  background: var(--fw-neutral-fg);
   vertical-align: baseline;
 }
 [data-fairway-item="tool"][data-status="running"] [data-fairway-tool-label]::before {
-  background: #c9a24a;
+  background: var(--fw-warn-fg);
   animation: fw-pulse 1.2s ease-in-out infinite;
 }
-[data-fairway-item="tool"][data-status="ok"] [data-fairway-tool-label]::before { background: #5aa46a; }
-[data-fairway-item="tool"][data-status="err"] [data-fairway-tool-label]::before { background: #e07a7a; }
-[data-fairway-item="tool"][data-status="interrupted"] [data-fairway-tool-label]::before { background: #c9a24a; }
+[data-fairway-item="tool"][data-status="ok"] [data-fairway-tool-label]::before { background: var(--fw-ok-fg); }
+[data-fairway-item="tool"][data-status="err"] [data-fairway-tool-label]::before { background: var(--fw-error); }
+[data-fairway-item="tool"][data-status="interrupted"] [data-fairway-tool-label]::before { background: var(--fw-warn-fg); }
 
 @keyframes fw-pulse {
   50% { opacity: 0.35; }
@@ -134,8 +158,8 @@
   padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid var(--fw-border);
-  background: #14181c;
-  color: #7ab3e0;
+  background: var(--fw-surface);
+  color: var(--fw-link);
   font-size: 12px;
   text-decoration: none;
 }
@@ -154,7 +178,7 @@
   padding: 3px 10px;
   border-radius: 999px;
   border: 1px solid var(--fw-border);
-  background: #14181c;
+  background: var(--fw-surface);
   font-size: 12px;
 }
 [data-fairway-remove-attachment] {
@@ -189,12 +213,12 @@
   align-self: stretch;
   padding: 8px 12px;
   border-radius: 8px;
-  border: 1px dashed #6a5a3a;
-  background: #14181c;
+  border: 1px dashed var(--fw-warn);
+  background: var(--fw-surface);
   font-size: 13px;
 }
-[data-fairway-item="permission"][data-status="allowed"] { border-color: #3a5a3a; border-style: solid; }
-[data-fairway-item="permission"][data-status="denied"] { border-color: #6a3a3a; border-style: solid; }
+[data-fairway-item="permission"][data-status="allowed"] { border-color: var(--fw-ok); border-style: solid; }
+[data-fairway-item="permission"][data-status="denied"] { border-color: var(--fw-err); border-style: solid; }
 [data-fairway-item="permission"][data-status="interrupted"] { border-style: solid; opacity: 0.7; }
 [data-fairway-permission-detail] { color: var(--fw-text-dim); }
 [data-fairway-permission-detail]::before { content: " · "; }
@@ -209,8 +233,8 @@
   cursor: pointer;
   font-size: 12px;
 }
-[data-fairway-allow] { border-color: #3a5a3a; }
-[data-fairway-deny] { border-color: #6a3a3a; }
+[data-fairway-allow] { border-color: var(--fw-ok); }
+[data-fairway-deny] { border-color: var(--fw-err); }
 
 /* bouncing-dots working indicator */
 [data-fairway-item="typing"] {
@@ -250,7 +274,7 @@
   padding: 10px 12px;
   border-radius: 8px;
   border: 1px solid var(--fw-border);
-  background: #16191c;
+  background: var(--fw-input-bg);
   color: inherit;
   font-size: 14px;
   outline: none;
@@ -267,7 +291,7 @@
   flex-shrink: 0;
 }
 [data-fairway-stop] {
-  background: #5c2b2b;
+  background: var(--fw-stop);
 }
 [data-fairway-send]:disabled {
   opacity: 0.5;
@@ -283,17 +307,17 @@
 [data-markdown] li + li { margin-top: 0.2em; }
 [data-markdown] code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.9em; background: #262b31; padding: 1px 5px; border-radius: 4px;
+  font-size: 0.9em; background: var(--fw-code-bg); padding: 1px 5px; border-radius: 4px;
 }
 [data-markdown] pre {
-  background: #0b0d0f; border: 1px solid var(--fw-border); border-radius: 8px;
+  background: var(--fw-pre-bg); border: 1px solid var(--fw-border); border-radius: 8px;
   padding: 10px 12px; overflow-x: auto;
 }
 [data-markdown] pre code { background: none; padding: 0; font-size: 0.85em; }
 [data-markdown] blockquote {
-  border-left: 3px solid #3a4a5a; padding-left: 10px; color: var(--fw-text-dim);
+  border-left: 3px solid var(--fw-border-strong); padding-left: 10px; color: var(--fw-text-dim);
 }
-[data-markdown] a { color: #7ab3e0; }
+[data-markdown] a { color: var(--fw-link); }
 [data-markdown] table { border-collapse: collapse; }
 [data-markdown] th, [data-markdown] td {
   border: 1px solid var(--fw-border); padding: 4px 10px; font-size: 13px;
