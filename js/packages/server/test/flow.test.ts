@@ -75,6 +75,18 @@ describe("protocol flow", () => {
     expect(meta.protocol_version).toMatch(/^\d+\.\d+$/);
   });
 
+  it("rename: PATCH updates the name, 404 on unknown session", async () => {
+    const sid = await newSession();
+    const patch = (p: string, body: unknown) =>
+      fetch(base + p, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const renamed = await patch(`/sessions/${sid}`, { name: "ops log" });
+    expect(renamed.status).toBe(200);
+    expect((await renamed.json()).session.name).toBe("ops log");
+    const list = (await (await get("/sessions")).json()).sessions;
+    expect(list.find((s: { id: string }) => s.id === sid)?.name).toBe("ops log");
+    expect((await patch("/sessions/nope", { name: "x" })).status).toBe(404);
+  });
+
   it("full turn: ordered events, done carries message_id, message readable immediately", async () => {
     const sid = await newSession();
     const sent = await post(`/sessions/${sid}/send`, { content: "hello world" });

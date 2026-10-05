@@ -56,6 +56,10 @@ export class Store {
   async deleteSession(id: string): Promise<void> {
     await this.backend.execute("DELETE FROM sessions WHERE id = ?", [id]);
   }
+  async renameSession(id: string, name: string): Promise<Record<string, unknown> | null> {
+    await this.backend.execute("UPDATE sessions SET name = ? WHERE id = ?", [name, id]);
+    return this.getSession(id);
+  }
   async setProviderSessionId(id: string, providerSessionId: string): Promise<void> {
     await this.backend.execute("UPDATE sessions SET provider_session_id = ? WHERE id = ?", [
       providerSessionId,

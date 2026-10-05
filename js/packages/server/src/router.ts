@@ -56,6 +56,11 @@ export function createHandler(deps: RouterDeps): (req: Req, res: Res) => Promise
         res.writeHead(204).end();
         return true;
       }
+      if ((m = path.match(/^\/sessions\/([^/]+)$/)) && method === "PATCH") {
+        if (!(await store.getSession(m[1]))) return json(res, 404, err("session not found"));
+        const body = await readJson(req);
+        return json(res, 200, { session: await store.renameSession(m[1], (body.name as string) ?? "") });
+      }
       if ((m = path.match(/^\/sessions\/([^/]+)\/messages$/)) && method === "GET") {
         if (!(await store.getSession(m[1]))) return json(res, 404, err("session not found"));
         return json(res, 200, { messages: await store.listMessages(m[1]) });
