@@ -1,6 +1,6 @@
 {
   "name": "@fairway-kit/agent",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Agent integration toolkit for fairway: the Runner contract, a normalized event pump, and adapters (Claude, ...) that turn any agent into durable protocol events",
   "license": "MIT",
   "author": "Andrew Long",
@@ -39,7 +39,9 @@
     "@anthropic-ai/claude-agent-sdk": "*"
   },
   "peerDependenciesMeta": {
-    "@anthropic-ai/claude-agent-sdk": { "optional": true }
+    "@anthropic-ai/claude-agent-sdk": {
+      "optional": true
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -48,7 +50,7 @@
     "smoke:claude": "tsx scripts/smoke-claude.ts"
   },
   "dependencies": {
-    "@fairway-kit/protocol": "0.4.2"
+    "@fairway-kit/protocol": "0.5.0"
   },
   "devDependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.227",

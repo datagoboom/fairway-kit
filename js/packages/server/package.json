@@ -1,6 +1,6 @@
 {
   "name": "@fairway-kit/server",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Dev kit backend for local agent-backed apps: durable, resumable agent chat over Node (SQLite), implementing the Agent Chat Protocol",
   "license": "MIT",
   "author": "Andrew Long",
@@ -49,8 +49,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@fairway-kit/agent": "0.1.0",
-    "@fairway-kit/protocol": "0.4.2",
+    "@fairway-kit/agent": "0.2.0",
+    "@fairway-kit/protocol": "0.5.0",
     "better-sqlite3": "^11.0.0",
     "busboy": "^1.6.0"
   },

@@ -1,6 +1,6 @@
 {
   "name": "@fairway-kit/client",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "Dev kit frontend for local agent-backed apps: resumable SSE streaming, event fold, headless React chat components",
   "license": "MIT",
   "author": "Andrew Long",
@@ -10,7 +10,17 @@
     "directory": "js/packages/client"
   },
   "homepage": "https://github.com/datagoboom/fairway-kit",
-  "keywords": ["agent", "chat", "sse", "streaming", "claude", "llm", "react", "headless", "local-first"],
+  "keywords": [
+    "agent",
+    "chat",
+    "sse",
+    "streaming",
+    "claude",
+    "llm",
+    "react",
+    "headless",
+    "local-first"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -29,15 +39,19 @@
     },
     "./react/styles.css": "./dist/react/styles.css"
   },
-  "sideEffects": ["*.css"],
-  "files": ["dist"],
+  "sideEffects": [
+    "*.css"
+  ],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json && cp src/react/styles.css dist/react/styles.css",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@fairway-kit/protocol": "0.4.2"
+    "@fairway-kit/protocol": "0.5.0"
   },
   "peerDependencies": {
     "react": ">=18",
@@ -45,9 +59,15 @@
     "remark-gfm": ">=4"
   },
   "peerDependenciesMeta": {
-    "react": { "optional": true },
-    "react-markdown": { "optional": true },
-    "remark-gfm": { "optional": true }
+    "react": {
+      "optional": true
+    },
+    "react-markdown": {
+      "optional": true
+    },
+    "remark-gfm": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/react": "^18.3.0",

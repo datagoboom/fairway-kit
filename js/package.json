@@ -1,7 +1,7 @@
 {
   "name": "fairway-kit-js",
   "private": true,
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "fairway-kit JS monorepo: @fairway-kit/protocol, @fairway-kit/agent, @fairway-kit/client, and @fairway-kit/server",
   "type": "module",
   "workspaces": [
